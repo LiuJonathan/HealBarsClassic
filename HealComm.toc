@@ -1,0 +1,15 @@
+## Interface: 11302
+## Title: HealComm
+## Notes: Visual representation of incoming heals
+## Author: Avi
+## Maintainer: SideFlanker
+## SavedVariables: HealCommSettings
+## OptionalDeps: LibClassicHealComm-1.0, Blizzard_RaidUI, Blizzard_CompactRaidFrames
+
+#@no-lib-strip@
+libs\LibStub\LibStub.lua
+libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
+libs\LibHealComm-4.0\LibHealComm-4.0.xml
+#@end-no-lib-strip@
+
+HealComm.lua
