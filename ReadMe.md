@@ -1,5 +1,5 @@
-For those unfamiliar with github, download this as a zip using the button at the top right of the file list and install like any other addon.
+For those unfamiliar with github, click on the releases tab above the file list and download HealComm.zip. You can also click the green download button, but that is not guarenteed to be a stable version.
 
-Original work by the creator of Luna Unit Frames. 
+Original work by the creator of Luna Unit Frames. https://github.com/Aviana/LunaUnitFrames 
 
-Not fully tested.
+Not fully tested. Not compatible with plugins still using LibClassicHealComm-1.0
