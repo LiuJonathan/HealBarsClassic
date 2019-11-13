@@ -2,4 +2,4 @@ For those unfamiliar with github, click on the releases tab above the file list 
 
 Original work by the creator of Luna Unit Frames. https://github.com/Aviana/LunaUnitFrames 
 
-Not fully tested. Not compatible with plugins still using LibClassicHealComm-1.0
+Not fully tested. 
