@@ -391,7 +391,7 @@ options:SetScript("OnShow", function(self)
 	updateColors:SetSize(80 ,22) 
 	updateColors:SetText("Update")
 	updateColors:SetPoint("TOPLEFT", alphaSlider, "BOTTOMLEFT", 0, -22)
-	updateColors:SetScript("OnClick",function()HealComm:UpdateBars end)
+	updateColors:SetScript("OnClick",function()HealComm:UpdateBars() end)
 
 	self:SetScript("OnShow", nil)
 end)
