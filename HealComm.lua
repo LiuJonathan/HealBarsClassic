@@ -297,7 +297,6 @@ options:Hide()
 --Refresh hard settings on config close
 options:SetScript("OnHide", function(self)
 	HealComm:UpdateBars()
-	self:SetScript("OnHide",nil)
 end)
 
 options:SetScript("OnShow", function(self)
