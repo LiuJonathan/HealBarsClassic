@@ -294,11 +294,6 @@ local options = CreateFrame("Frame", nil, InterfaceOptionsFramePanelContainer)
 options.name = "HealComm"
 options:Hide()
 
---Refresh hard settings on config close
-options:SetScript("OnHide", function(self)
-	HealComm:UpdateBars()
-end)
-
 options:SetScript("OnShow", function(self)
 
 	local function BoxConstructor(name, desc, clickFunc)
@@ -364,33 +359,39 @@ options:SetScript("OnShow", function(self)
 	colorLabel:SetText("Heal Color:")
 	colorLabel:SetPoint("TOPLEFT", timeframeSlider, "BOTTOMLEFT", 0, -36)
 	
-	local redSlider = SliderConstructor("Red", "What color to make the heal bars. Update will happen after settings are closed", function(self, value) HealCommSettings.healColor.red = value/255 end)
+	local redSlider = SliderConstructor("Red", "What color to make the heal bars", function(self, value) HealCommSettings.healColor.red = value/255 end)
 	redSlider:SetMinMaxValues(0, 255)
 	redSlider:SetValueStep(1)
 	redSlider:SetObeyStepOnDrag(true)
 	redSlider:SetValue(HealCommSettings.healColor.red)
 	redSlider:SetPoint("TOPLEFT", colorLabel, "BOTTOMLEFT", 0, -26)
 	
-	local greenSlider = SliderConstructor("Green", "What color to make the heal bars. Update will happen after settings are closed", function(self, value) HealCommSettings.healColor.green = value/255 end)
+	local greenSlider = SliderConstructor("Green", "What color to make the heal bars", function(self, value) HealCommSettings.healColor.green = value/255 end)
 	greenSlider:SetMinMaxValues(0, 255)
 	greenSlider:SetValueStep(1)
 	greenSlider:SetObeyStepOnDrag(true)
 	greenSlider:SetValue(HealCommSettings.healColor.green)
 	greenSlider:SetPoint("TOPLEFT", redSlider, "BOTTOMLEFT", 0, -26)
 	
-	local blueSlider = SliderConstructor("Blue", "What color to make the heal bars. Update will happen after settings are closed", function(self, value) HealCommSettings.healColor.blue = value/255 end)
+	local blueSlider = SliderConstructor("Blue", "What color to make the heal bars", function(self, value) HealCommSettings.healColor.blue = value/255 end)
 	blueSlider:SetMinMaxValues(0, 255)
 	blueSlider:SetValueStep(1)
 	blueSlider:SetObeyStepOnDrag(true)
 	blueSlider:SetValue(HealCommSettings.healColor.blue)
 	blueSlider:SetPoint("TOPLEFT", greenSlider, "BOTTOMLEFT", 0, -26)
 	
-	local alphaSlider = SliderConstructor("Alpha", "What color to make the heal bars. Update will happen after settings are closed", function(self, value) HealCommSettings.healColor.alpha = value/100 end)
+	local alphaSlider = SliderConstructor("Alpha", "What color to make the heal bars", function(self, value) HealCommSettings.healColor.alpha = value/100 end)
 	alphaSlider:SetMinMaxValues(0, 100)
 	alphaSlider:SetValueStep(1)
 	alphaSlider:SetObeyStepOnDrag(true)
 	alphaSlider:SetValue(HealCommSettings.healColor.alpha*100)
 	alphaSlider:SetPoint("TOPLEFT", blueSlider, "BOTTOMLEFT", 0, -26)
+	
+	local updateColors = CreateFrame("Button", "updateHealColor", options, "UIPanelButtonTemplate")
+	updateColors:SetSize(80 ,22) 
+	updateColors:SetText("Update")
+	updateColors:SetPoint("TOPLEFT", alphaSlider, "BOTTOMLEFT", 0, -22)
+	updateColors:SetScript("OnClick",function()HealComm:UpdateBars end)
 
 	self:SetScript("OnShow", nil)
 end)
