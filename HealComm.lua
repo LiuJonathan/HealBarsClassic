@@ -5,7 +5,7 @@ if not HealCommSettings then
 		overhealpercent = 20,
 		timeframe = 4,
 		showHots = true,
-		healColor = {red=0,green=1,blue=0,alpha=60}
+		healColor = {red=0,green=255,blue=0,alpha=60}
 	}
 end
 
@@ -76,7 +76,7 @@ hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This
 
 function HealComm:OnInitialize()
 	--Initalize new options for 1.1.0
-	HealCommSettings.healColor = HealCommSettings.healColor or {red=0,green=1,blue=0,alpha=60}
+	HealCommSettings.healColor = HealCommSettings.healColor or {red=0,green=255,blue=0,alpha=60}
 
 
 	self:CreateBars()
@@ -337,61 +337,61 @@ options:SetScript("OnShow", function(self)
 
 	local version = self:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	version:SetText("Version: "..HealComm.version)
-	version:SetPoint("TOPLEFT", header, "BOTTOMLEFT", -2, -16)
+	version:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -16)
 
 	local donate = self:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	donate:SetText("Donate to the original creator: paypal.me/LunaUnitFrames")
-	donate:SetPoint("TOPLEFT", version, "BOTTOMLEFT", -2, -16)
+	donate:SetPoint("TOPLEFT", version, "BOTTOMLEFT", 0, -16)
 
 	local showHots = BoxConstructor("Show Hots", "Show hots in the healing prediction", function(self, value) HealCommSettings.showHots = value end)
 	showHots:SetChecked(HealCommSettings.showHots)
-	showHots:SetPoint("TOPLEFT", donate, "BOTTOMLEFT", -2, -16)
+	showHots:SetPoint("TOPLEFT", donate, "BOTTOMLEFT", 0, -16)
 
 	local overhealSlider = SliderConstructor("Extend Overheal", "How many percent of the frame to go over it when showing heals", function(self, value) HealCommSettings.overhealpercent = value end)
 	overhealSlider:SetMinMaxValues(0, 30)
 	overhealSlider:SetValueStep(1)
 	overhealSlider:SetObeyStepOnDrag(true)
 	overhealSlider:SetValue(HealCommSettings.overhealpercent)
-	overhealSlider:SetPoint("TOPLEFT", showHots, "BOTTOMLEFT", -2, -16)
+	overhealSlider:SetPoint("TOPLEFT", showHots, "BOTTOMLEFT", 0, -16)
 
 	local timeframeSlider = SliderConstructor("Timeframe", "How many seconds to predict into the future", function(self, value) HealCommSettings.timeframe = value end)
 	timeframeSlider:SetMinMaxValues(3, 10)
 	timeframeSlider:SetValueStep(1)
 	timeframeSlider:SetObeyStepOnDrag(true)
 	timeframeSlider:SetValue(HealCommSettings.timeframe)
-	timeframeSlider:SetPoint("TOPLEFT", overhealSlider, "BOTTOMLEFT", -2, -26)
+	timeframeSlider:SetPoint("TOPLEFT", overhealSlider, "BOTTOMLEFT", 0, -26)
 	
 	local colorLabel = self:CreateFontString(nil, "ARTWORK", "GameFontHighlightLarge")
 	colorLabel:SetText("Heal Color:")
-	colorLabel:SetPoint("TOPLEFT", timeframeSlider, "BOTTOMLEFT", -2, -36)
+	colorLabel:SetPoint("TOPLEFT", timeframeSlider, "BOTTOMLEFT", 0, -36)
 	
-	local redSlider = SliderConstructor("Heal Color: Red", "What color to make the heal bars. Update will happen after settings are closed", function(self, value) HealCommSettings.healColor.red = value end)
+	local redSlider = SliderConstructor("Red", "What color to make the heal bars. Update will happen after settings are closed", function(self, value) HealCommSettings.healColor.red = value end)
 	redSlider:SetMinMaxValues(0, 255)
 	redSlider:SetValueStep(1)
 	redSlider:SetObeyStepOnDrag(true)
 	redSlider:SetValue(HealCommSettings.healColor.red)
-	redSlider:SetPoint("TOPLEFT", colorLabel, "BOTTOMLEFT", -2, -26)
+	redSlider:SetPoint("TOPLEFT", colorLabel, "BOTTOMLEFT", 0, -26)
 	
 	local greenSlider = SliderConstructor("Green", "What color to make the heal bars. Update will happen after settings are closed", function(self, value) HealCommSettings.healColor.green = value end)
 	greenSlider:SetMinMaxValues(0, 255)
 	greenSlider:SetValueStep(1)
 	greenSlider:SetObeyStepOnDrag(true)
 	greenSlider:SetValue(HealCommSettings.healColor.green)
-	greenSlider:SetPoint("TOPLEFT", redSlider, "BOTTOMLEFT", -2, -26)
+	greenSlider:SetPoint("TOPLEFT", redSlider, "BOTTOMLEFT", 0, -26)
 	
 	local blueSlider = SliderConstructor("Blue", "What color to make the heal bars. Update will happen after settings are closed", function(self, value) HealCommSettings.healColor.blue = value end)
 	blueSlider:SetMinMaxValues(0, 255)
 	blueSlider:SetValueStep(1)
 	blueSlider:SetObeyStepOnDrag(true)
 	blueSlider:SetValue(HealCommSettings.healColor.blue)
-	blueSlider:SetPoint("TOPLEFT", greenSlider, "BOTTOMLEFT", -2, -26)
+	blueSlider:SetPoint("TOPLEFT", greenSlider, "BOTTOMLEFT", 0, -26)
 	
 	local alphaSlider = SliderConstructor("Alpha", "What color to make the heal bars. Update will happen after settings are closed", function(self, value) HealCommSettings.healColor.alpha = value/100 end)
 	alphaSlider:SetMinMaxValues(0, 100)
 	alphaSlider:SetValueStep(1)
 	alphaSlider:SetObeyStepOnDrag(true)
 	alphaSlider:SetValue(HealCommSettings.healColor.alpha*100)
-	alphaSlider:SetPoint("TOPLEFT", blueSlider, "BOTTOMLEFT", -2, -26)
+	alphaSlider:SetPoint("TOPLEFT", blueSlider, "BOTTOMLEFT", 0, -26)
 
 	self:SetScript("OnShow", nil)
 end)
