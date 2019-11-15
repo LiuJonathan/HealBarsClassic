@@ -5,7 +5,7 @@ if not HealCommSettings then
 		overhealpercent = 20,
 		timeframe = 4,
 		showHots = true,
-		healColor = {red=0,green=255,blue=0,alpha=60}
+		healColor = {red=0,green=1,blue=0,alpha=60}
 	}
 end
 
@@ -76,7 +76,7 @@ hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This
 
 function HealComm:OnInitialize()
 	--Initalize new options for 1.1.0
-	HealCommSettings.healColor = HealCommSettings.healColor or {red=0,green=255,blue=0,alpha=60}
+	HealCommSettings.healColor = HealCommSettings.healColor or {red=0,green=1,blue=0,alpha=60}
 
 
 	self:CreateBars()
@@ -364,21 +364,21 @@ options:SetScript("OnShow", function(self)
 	colorLabel:SetText("Heal Color:")
 	colorLabel:SetPoint("TOPLEFT", timeframeSlider, "BOTTOMLEFT", 0, -36)
 	
-	local redSlider = SliderConstructor("Red", "What color to make the heal bars. Update will happen after settings are closed", function(self, value) HealCommSettings.healColor.red = value end)
+	local redSlider = SliderConstructor("Red", "What color to make the heal bars. Update will happen after settings are closed", function(self, value) HealCommSettings.healColor.red = value/255 end)
 	redSlider:SetMinMaxValues(0, 255)
 	redSlider:SetValueStep(1)
 	redSlider:SetObeyStepOnDrag(true)
 	redSlider:SetValue(HealCommSettings.healColor.red)
 	redSlider:SetPoint("TOPLEFT", colorLabel, "BOTTOMLEFT", 0, -26)
 	
-	local greenSlider = SliderConstructor("Green", "What color to make the heal bars. Update will happen after settings are closed", function(self, value) HealCommSettings.healColor.green = value end)
+	local greenSlider = SliderConstructor("Green", "What color to make the heal bars. Update will happen after settings are closed", function(self, value) HealCommSettings.healColor.green = value/255 end)
 	greenSlider:SetMinMaxValues(0, 255)
 	greenSlider:SetValueStep(1)
 	greenSlider:SetObeyStepOnDrag(true)
 	greenSlider:SetValue(HealCommSettings.healColor.green)
 	greenSlider:SetPoint("TOPLEFT", redSlider, "BOTTOMLEFT", 0, -26)
 	
-	local blueSlider = SliderConstructor("Blue", "What color to make the heal bars. Update will happen after settings are closed", function(self, value) HealCommSettings.healColor.blue = value end)
+	local blueSlider = SliderConstructor("Blue", "What color to make the heal bars. Update will happen after settings are closed", function(self, value) HealCommSettings.healColor.blue = value/255 end)
 	blueSlider:SetMinMaxValues(0, 255)
 	blueSlider:SetValueStep(1)
 	blueSlider:SetObeyStepOnDrag(true)
