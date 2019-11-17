@@ -3,7 +3,9 @@
 	Last modified by: LiuCJonathan
 	Notes: 
 		Documentation by LiuCJonathan.
+		If the documentation mentions a "non-functional" variable/parameter, it means it has no use in that specific function
 --]]
+
 
 local libCHC = LibStub("LibHealComm-4.0", true)
 
@@ -40,6 +42,12 @@ local partyGUIDs = {
 }
 local currentHeals = {}
 
+--[[
+	Function: RaidPulloutButton_OnLoadHook
+	Purpose:(???)
+	Created by: Aviana
+	Last modified by: Aviana
+]]--
 local function RaidPulloutButton_OnLoadHook(self)
 	if not hpBars[self] then
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")] = CreateFrame("StatusBar", self:GetName().."HealthBarIncHeal" , self)
@@ -50,44 +58,73 @@ local function RaidPulloutButton_OnLoadHook(self)
 	end
 end
 
+--[[
+	Function: UnitFrameHealthBar_OnValueChangedHook
+	Purpose: Update heal bar when a unit's health bar changes (?)
+	Created by: Aviana
+	Last modified by: Aviana
+]]--
 local function UnitFrameHealthBar_OnValueChangedHook(self)
 	HealComm:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0)
 end
 
+
+--[[
+	Function: UnitFrameHealthBar_OnUpdateHook
+	Purpose: Update heal bar when a unit's health bar location (??) changes (?)
+	Created by: Aviana
+	Last modified by: Aviana
+	Inputs: Frame
+		Where Frame is a unit frame to update
+	Notes: 
+		Function hook happens immediately after function definition	
+]]--
 local function UnitFrameHealthBar_OnUpdateHook(self)
 	if self.unit ~= "player" then return end
 	HealComm:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0)
 end
 hooksecurefunc("UnitFrameHealthBar_OnUpdate", UnitFrameHealthBar_OnUpdateHook) -- This needs early hooking
 
+
+--[[
+	Function: CompactUnitFrame_UpdateHealthHook
+	Purpose: Update heal bar when a unit's health bar changes (?)
+	Created by: Aviana
+	Last modified by: Aviana
+	Inputs: Frame
+		Where Frame is a unit frame to update
+]]--
 local function CompactUnitFrame_UpdateHealthHook(self)
 	if not hpBars[self.healthBar] then return end
 	HealComm:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0)
 end
 
+
 --[[
 	Function: CompactUnitFrame_UpdateMaxHealthHook
-	Purpose: Initalize necessary functions and set hooks, callbacks
+	Purpose: Update heal calculations after a max health change
 	Created by: Aviana
 	Last modified by: Aviana
-	Notes: 
-		Function hook happens immediately after function definition	
+	Inputs: Frame
+		Where Frame is a unit frame to update
 ]]--
-
 local function CompactUnitFrame_UpdateMaxHealthHook(self)
 	if not hpBars[self.healthBar] then return end
 	HealComm:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0)
 end
 
+
 --[[
 	Function: CompactUnitFrame_SetUnitHook
-	Purpose: Initalize necessary functions and set hooks, callbacks
+	Purpose: Create new heal bar when a new unit joins the raid (?)
 	Created by: Aviana
 	Last modified by: Aviana
+	Inputs: Frame, Unit
+		Where Frame is a parent frame to attach to
+		Where Unit is the GUID of the unit being added (?)
 	Notes: 
 		Function hook happens immediately after function definition	
 ]]--
-
 local function CompactUnitFrame_SetUnitHook(self, unit)
 	if not hpBars[self.healthBar] then
 		hpBars[self.healthBar] = CreateFrame("StatusBar", nil, self)
@@ -99,13 +136,13 @@ local function CompactUnitFrame_SetUnitHook(self, unit)
 end
 hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This needs early hooking
 
+
 --[[
 	Function: OnInitialize
 	Purpose: Initalize necessary functions and set hooks, callbacks
 	Created by: Aviana
 	Last modified by: LiuCJonathan
 ]]--
-
 function HealComm:OnInitialize()
 	--Initalize new options for 1.1.0
 	HealCommSettings.healColor = HealCommSettings.healColor or {red=0,green=1,blue=0,alpha=60}
@@ -123,13 +160,13 @@ function HealComm:OnInitialize()
 	libCHC.RegisterCallback(HealComm, "HealComm_GUIDDisappeared")
 end
 
+
 --[[
 	Function: CreateBars
 	Purpose: Create and initalize heal bars for all frames
 	Created by: Aviana
 	Last modified by: Aviana
 ]]--
-
 function HealComm:CreateBars()
 	for unit,v in pairs(frames) do
 		if not hpBars[v] then
@@ -142,13 +179,13 @@ function HealComm:CreateBars()
 	end
 end
 
+
 --[[
 	Function: UpdateBars
 	Purpose: Update the color of all heal bars
 	Created by: LiuCJonathan
 	Last modified by: LiuCJonathan
 ]]--
-
 function HealComm:UpdateBars()
 	for unit,v in pairs(frames) do
 		if hpBars[v.bar] then
@@ -157,13 +194,15 @@ function HealComm:UpdateBars()
 	end
 end
 
+
 --[[
 	Function: UNIT_PET
 	Purpose: Update pet heal bars
 	Created by: Aviana
 	Last modified by: Aviana
+	Inputs: Unit
+		Where Unit is the UnitID of the pet being updated
 ]]--
-
 function HealComm:UNIT_PET(unit)
 	if unit ~= "player" and strsub(unit,1,5) ~= "party" then return end
 	petunit = unit == "player" and "pet" or "partypet"..strsub(unit,6)
@@ -185,13 +224,13 @@ function HealComm:PLAYER_TARGET_CHANGED()
 	self:UpdateFrame(frames["target"].bar, "target", currentHeals[UnitGUID("target")] or 0)
 end
 
+
 --[[
 	Function: PLAYER_ROLES_ASSIGNED
 	Purpose: Update party and raid heal bars after a raid role assignment
 	Created by: Aviana
 	Last modified by: Aviana
 ]]--
-
 function HealComm:PLAYER_ROLES_ASSIGNED() 
 	local frame, unitframe, num
 	for guid,unit in pairs(partyGUIDs) do
@@ -252,6 +291,7 @@ function HealComm:PLAYER_ROLES_ASSIGNED()
 	end
 end
 
+
 --[[
 	Function: HealComm_HealUpdated
 	Purpose: HealCommLib callback handler
@@ -262,10 +302,10 @@ end
 			Where event, casterGUID, spellID, etc. are non-functional
 			Where args is a table of GUIDs to update
 --]]
-
 function HealComm:HealComm_HealUpdated(event, casterGUID, spellID, healType, endTime, ...)
 	self:UpdateIncoming(...)
 end
+
 
 --[[
 	Function: HealComm_HealStopped
@@ -277,10 +317,10 @@ end
 			Where event, casterGUID, spellID, etc. are non-functional
 			Where args is a table of GUIDs to update
 --]]
-
 function HealComm:HealComm_HealStopped(event, casterGUID, spellID, healType, interrupted, ...)
 	self:UpdateIncoming(...)
 end
+
 
 --[[
 	Function: HealComm_ModifierChanged
@@ -292,10 +332,10 @@ end
 			Where Event is non-functional
 			Where GUID is the GUID to update
 --]]
-
 function HealComm:HealComm_ModifierChanged(event, guid)
 	self:UpdateIncoming(guid)
 end
+
 
 --[[
 	Function: SliderConstructor
@@ -306,10 +346,10 @@ end
 			Where Event is non-functional
 			Where GUID is the GUID that disappeared
 --]]
-
 function HealComm:HealComm_GUIDDisappeared(event, guid)
 	self:UpdateIncoming(guid)
 end
+
 
 --[[
 	Function: UpdateIncoming
@@ -319,7 +359,6 @@ end
 	Inputs: args
 			A table of GUIDs to update
 --]]
-
 function HealComm:UpdateIncoming(...)
 	local amount, targetGUID, num, frame, unitframe, healType
 	if HealCommSettings.showHots then
@@ -382,6 +421,7 @@ function HealComm:UpdateIncoming(...)
 	end
 end
 
+
 --[[
 	Function: UpdateFrame
 	Purpose: HealCommLib callback handler. Updates heal bars
@@ -392,7 +432,6 @@ end
 		Where Unit is the UnitID that the heal bar references
 		Where HealAmount is the amount of incoming healing
 --]]
-
 function HealComm:UpdateFrame(frame, unit, amount)
 	local health, maxHealth = UnitHealth(unit), UnitHealthMax(unit)
 	if( amount and amount > 0 and (health < maxHealth or HealCommSettings.overhealpercent > 0 )) and frame:IsVisible() then
@@ -411,6 +450,7 @@ function HealComm:UpdateFrame(frame, unit, amount)
 	end
 end
 
+
 --[[
 	Code section: Config: Main Options Tab
 	Purpose: Add and attach options page
@@ -423,6 +463,7 @@ options.name = "HealComm"
 options:Hide()
 options:SetScript("OnShow", function(self)
 
+	
 	--[[
 		Function: BoxConstructor
 		Purpose: Template for checkboxes
@@ -445,7 +486,10 @@ options:SetScript("OnShow", function(self)
 		box.tooltipRequirement = desc
 		return box
 	end
+	
+	
 
+	
 	--[[
 		Function: SliderConstructor
 		Purpose: Template for sliders
@@ -547,17 +591,19 @@ options:SetScript("OnShow", function(self)
 end)
 InterfaceOptions_AddCategory(options)
 
---[[End of Config: Main Options Tab code section]]--
+
+--[[End of "Config: Main Options Tab" code section]]--
+
 
 
 
 --[[
 	Code section: Event Registration
-	Purpose: Reinitalize healcomm after an event that changes frame locations
+	Purpose: Set event to initalize HealComm on first login and 
+			update targets after target/pet/raid role change
 	Created by: Aviana
 	Last modified by: Aviana
 --]]
-
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_TARGET_CHANGED")
@@ -572,4 +618,5 @@ frame:SetScript("OnEvent", function(self, event, ...)
 	end
 end)
 
---[[ End of Event Registration code section ]]--
+
+--[[ End of "Event Registration" code section ]]--
