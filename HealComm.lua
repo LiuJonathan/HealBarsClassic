@@ -4,6 +4,7 @@
 	Notes: 
 		Documentation by LiuCJonathan.
 		If the documentation mentions a "non-functional" variable/parameter, it means it has no use in that specific function
+		At some point, the ambiguous "self" parameter in some functions should be renamed to "frame"
 --]]
 
 
@@ -47,6 +48,10 @@ local currentHeals = {}
 	Purpose:(???)
 	Created by: Aviana
 	Last modified by: Aviana
+	Inputs: Frame
+		Where Frame is a unit frame to update
+	Notes: 
+		Possibly removable without any functionality impact
 ]]--
 local function RaidPulloutButton_OnLoadHook(self)
 	if not hpBars[self] then
@@ -60,9 +65,11 @@ end
 
 --[[
 	Function: UnitFrameHealthBar_OnValueChangedHook
-	Purpose: Update heal bar when a unit's health bar changes (?)
+	Purpose: Updates unit frames when a unit's max health changes
 	Created by: Aviana
 	Last modified by: Aviana
+	Inputs: Frame
+		Where Frame is a unit frame to update
 ]]--
 local function UnitFrameHealthBar_OnValueChangedHook(self)
 	HealComm:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0)
@@ -71,7 +78,7 @@ end
 
 --[[
 	Function: UnitFrameHealthBar_OnUpdateHook
-	Purpose: Update heal bar when a unit's health bar location (??) changes (?)
+	Purpose: Updates unit frames when a unit's health changes
 	Created by: Aviana
 	Last modified by: Aviana
 	Inputs: Frame
@@ -88,7 +95,7 @@ hooksecurefunc("UnitFrameHealthBar_OnUpdate", UnitFrameHealthBar_OnUpdateHook) -
 
 --[[
 	Function: CompactUnitFrame_UpdateHealthHook
-	Purpose: Update heal bar when a unit's health bar changes (?)
+	Purpose: Update raid heal bars when a unit's health changes
 	Created by: Aviana
 	Last modified by: Aviana
 	Inputs: Frame
@@ -121,7 +128,7 @@ end
 	Last modified by: Aviana
 	Inputs: Frame, Unit
 		Where Frame is a parent frame to attach to
-		Where Unit is the GUID of the unit being added (?)
+		Where Unit is the UnitID of the unit being added
 	Notes: 
 		Function hook happens immediately after function definition	
 ]]--
