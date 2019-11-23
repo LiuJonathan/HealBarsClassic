@@ -499,17 +499,19 @@ options:SetScript("OnShow", function(self)
 		Function: SliderConstructor
 		Purpose: Template for sliders
 		Created by: Aviana
-		Last modified by: Aviana
+		Last modified by: LiuCJonathan
 		Inputs: Name, Description, Function(frame_object, value)
 				Where frame_object is a frame to attach to
 				Where value is a variable to send slider value updates to
-				Where
+				Where percent is a boolean indicating whether or not show the value of the slider as 0.xx 
 		Return: A new slider object
+		Notes: 
+			Blizzard sliders do not like having non-integer steps
 	--]]
 	
-	local function SliderConstructor(name, desc, valueFunc, decimal)
+	local function SliderConstructor(name, desc, valueFunc, percent)
 		local slider = CreateFrame("Slider", "HealCommOptionsSlider" .. name, self, "OptionsSliderTemplate")
-		if decimal == false then
+		if percent == false then
 			slider:SetScript("OnValueChanged", function(thisSlider)
 				valueFunc(thisSlider, thisSlider:GetValue())
 				thisSlider.High:SetText(thisSlider:GetValue())
