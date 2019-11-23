@@ -15,7 +15,7 @@ if not HealCommSettings then
 		overhealpercent = 20,
 		timeframe = 4,
 		showHots = true,
-		healColor = {red=0,green=1,blue=0,alpha=60}
+		healColor = {red=0,green=1,blue=0,alpha=0.6}
 	}
 end
 
@@ -345,8 +345,8 @@ end
 
 
 --[[
-	Function: SliderConstructor
-	Purpose: Template for sliders
+	Function: HealComm_GUIDDisappeared
+	Purpose: Update heal bars after a GUID disappears from view
 	Created by: Aviana
 	Last modified by: Aviana
 	Inputs: Event, GUID
@@ -495,8 +495,6 @@ options:SetScript("OnShow", function(self)
 	end
 	
 	
-
-	
 	--[[
 		Function: SliderConstructor
 		Purpose: Template for sliders
@@ -505,15 +503,23 @@ options:SetScript("OnShow", function(self)
 		Inputs: Name, Description, Function(frame_object, value)
 				Where frame_object is a frame to attach to
 				Where value is a variable to send slider value updates to
+				Where
 		Return: A new slider object
 	--]]
 	
-	local function SliderConstructor(name, desc, valueFunc)
+	local function SliderConstructor(name, desc, valueFunc, decimal)
 		local slider = CreateFrame("Slider", "HealCommOptionsSlider" .. name, self, "OptionsSliderTemplate")
-		slider:SetScript("OnValueChanged", function(thisSlider)
-			thisSlider.High:SetText(thisSlider:GetValue())
-			valueFunc(thisSlider, thisSlider:GetValue())
-		end)
+		if decimal == false then
+			slider:SetScript("OnValueChanged", function(thisSlider)
+				valueFunc(thisSlider, thisSlider:GetValue())
+				thisSlider.High:SetText(thisSlider:GetValue())
+			end)
+		else
+			slider:SetScript("OnValueChanged", function(thisSlider)
+				valueFunc(thisSlider, thisSlider:GetValue())
+				thisSlider.High:SetText(thisSlider:GetValue()/100)
+			end)
+		end
 		slider.label = _G[slider:GetName() .. "Text"]
 		slider.label:SetText(name)
 		slider.Low:Hide()
@@ -542,14 +548,14 @@ options:SetScript("OnShow", function(self)
 	showHots:SetChecked(HealCommSettings.showHots)
 	showHots:SetPoint("TOPLEFT", donate, "BOTTOMLEFT", 0, -16)
 
-	local overhealSlider = SliderConstructor("Extend Overheal", "How many percent of the frame to go over it when showing heals", function(self, value) HealCommSettings.overhealpercent = value end)
+	local overhealSlider = SliderConstructor("Extend Overheal", "How many percent of the frame to go over it when showing heals", function(self, value) HealCommSettings.overhealpercent = value end, false)
 	overhealSlider:SetMinMaxValues(0, 30)
 	overhealSlider:SetValueStep(1)
 	overhealSlider:SetObeyStepOnDrag(true)
 	overhealSlider:SetValue(HealCommSettings.overhealpercent)
 	overhealSlider:SetPoint("TOPLEFT", showHots, "BOTTOMLEFT", 0, -16)
 
-	local timeframeSlider = SliderConstructor("Timeframe", "How many seconds to predict into the future", function(self, value) HealCommSettings.timeframe = value end)
+	local timeframeSlider = SliderConstructor("Timeframe", "How many seconds to predict into the future", function(self, value) HealCommSettings.timeframe = value end, false)
 	timeframeSlider:SetMinMaxValues(3, 10)
 	timeframeSlider:SetValueStep(1)
 	timeframeSlider:SetObeyStepOnDrag(true)
@@ -560,28 +566,28 @@ options:SetScript("OnShow", function(self)
 	colorLabel:SetText("Heal Color:")
 	colorLabel:SetPoint("TOPLEFT", timeframeSlider, "BOTTOMLEFT", 0, -36)
 	
-	local redSlider = SliderConstructor("Red", "What color to make the heal bars", function(self, value) HealCommSettings.healColor.red = value/255 end)
+	local redSlider = SliderConstructor("Red", "What color to make the heal bars", function(self, value) HealCommSettings.healColor.red = value/255 end, false)
 	redSlider:SetMinMaxValues(0, 255)
 	redSlider:SetValueStep(1)
 	redSlider:SetObeyStepOnDrag(true)
 	redSlider:SetValue(HealCommSettings.healColor.red*255)
-	redSlider:SetPoint("TOPLEFT", colorLabel, "BOTTOMLEFT", 0, -26)
+	redSlider:SetPoint("TOPLEFT", colorLabel, "BOTTOMLEFT", 0, -22)
 	
-	local greenSlider = SliderConstructor("Green", "What color to make the heal bars", function(self, value) HealCommSettings.healColor.green = value/255 end)
+	local greenSlider = SliderConstructor("Green", "What color to make the heal bars", function(self, value) HealCommSettings.healColor.green = value/255 end, false)
 	greenSlider:SetMinMaxValues(0, 255)
 	greenSlider:SetValueStep(1)
 	greenSlider:SetObeyStepOnDrag(true)
 	greenSlider:SetValue(HealCommSettings.healColor.green*255)
 	greenSlider:SetPoint("TOPLEFT", redSlider, "BOTTOMLEFT", 0, -26)
 	
-	local blueSlider = SliderConstructor("Blue", "What color to make the heal bars", function(self, value) HealCommSettings.healColor.blue = value/255 end)
+	local blueSlider = SliderConstructor("Blue", "What color to make the heal bars", function(self, value) HealCommSettings.healColor.blue = value/255 end, false)
 	blueSlider:SetMinMaxValues(0, 255)
 	blueSlider:SetValueStep(1)
 	blueSlider:SetObeyStepOnDrag(true)
 	blueSlider:SetValue(HealCommSettings.healColor.blue*255)
 	blueSlider:SetPoint("TOPLEFT", greenSlider, "BOTTOMLEFT", 0, -26)
 	
-	local alphaSlider = SliderConstructor("Alpha", "What color to make the heal bars", function(self, value) HealCommSettings.healColor.alpha = value/100 end)
+	local alphaSlider = SliderConstructor("Alpha", "Set transparency of heal bars", function(self, value) HealCommSettings.healColor.alpha = value/100 end, true)
 	alphaSlider:SetMinMaxValues(0, 100)
 	alphaSlider:SetValueStep(1)
 	alphaSlider:SetObeyStepOnDrag(true)
@@ -590,7 +596,7 @@ options:SetScript("OnShow", function(self)
 	
 	local updateColors = CreateFrame("Button", "updateHealColor", options, "UIPanelButtonTemplate")
 	updateColors:SetSize(80 ,22) 
-	updateColors:SetText("Update")
+	updateColors:SetText("Apply color")
 	updateColors:SetPoint("TOPLEFT", alphaSlider, "BOTTOMLEFT", 0, -22)
 	updateColors:SetScript("OnClick",function()HealComm:UpdateBars() end)
 
