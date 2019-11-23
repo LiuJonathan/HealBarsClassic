@@ -20,7 +20,7 @@ if not HealCommSettings then
 end
 
 HealComm = select(2, ...)
-HealComm.version = "1.1.4"
+HealComm.version = "1.1.5"
 
 local hpBars = {}
 
@@ -152,7 +152,7 @@ hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This
 ]]--
 function HealComm:OnInitialize()
 	--Initalize new options for 1.1.0
-	HealCommSettings.healColor = HealCommSettings.healColor or {red=0,green=1,blue=0,alpha=60}
+	HealCommSettings.healColor = HealCommSettings.healColor or {red=0,green=1,blue=0,alpha=0.6}
 
 	self:CreateBars()
 	hooksecurefunc("RaidPulloutButton_OnLoad", RaidPulloutButton_OnLoadHook)
