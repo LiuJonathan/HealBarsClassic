@@ -152,7 +152,7 @@ hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This
 ]]--
 function HealComm:OnInitialize()
 	--Initalize new options for 1.1.0
-	HealCommSettings.healColor.alpha = HealCommSettings.healColor.alpha or 0.6
+	HealCommSettings.healColor = HealCommSettings.healColor or {red=0,green=1,blue=0,alpha=0.6}
 	--Fix for users upgrading from 1.1.3 and earlier
 	if HealCommSettings.healColor.alpha > 1 then
 		HealCommSettings.healColor.alpha=0.6;
