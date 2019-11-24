@@ -56,6 +56,8 @@ local currentHeals = {}
 local function RaidPulloutButton_OnLoadHook(self)
 	if not hpBars[self] then
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")] = CreateFrame("StatusBar", self:GetName().."HealthBarIncHeal" , self)
+		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetFrameStrata("LOW")
+		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetFrameLevel(hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:GetFrameLevel()-1)
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetMinMaxValues(0, 1)
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetValue(1)
@@ -135,6 +137,8 @@ end
 local function CompactUnitFrame_SetUnitHook(self, unit)
 	if not hpBars[self.healthBar] then
 		hpBars[self.healthBar] = CreateFrame("StatusBar", nil, self)
+		hpBars[self.healthBar]:SetFrameStrata("LOW")
+		hpBars[self.healthBar]:SetFrameLevel(hpBars[self.healthBar]:GetFrameLevel()-1)
 		hpBars[self.healthBar]:SetStatusBarTexture("Interface\\RaidFrame\\Raid-Bar-Hp-Fill")
 		hpBars[self.healthBar]:SetMinMaxValues(0, 1)
 		hpBars[self.healthBar]:SetValue(1)
@@ -182,6 +186,8 @@ function HealComm:CreateBars()
 	for unit,v in pairs(frames) do
 		if not hpBars[v] then
 			hpBars[v.bar] = CreateFrame("StatusBar", "IncHealBar"..unit, v.frame)
+			hpBars[v.bar]:SetFrameStrata("LOW")
+			hpBars[v.bar]:SetFrameLevel(hpBars[v.bar]:GetFrameLevel()-1)
 			hpBars[v.bar]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
 			hpBars[v.bar]:SetMinMaxValues(0, 1)
 			hpBars[v.bar]:SetValue(1)
@@ -198,9 +204,9 @@ end
 	Last modified by: LiuCJonathan
 ]]--
 function HealComm:UpdateBars()
-	for unit,v in pairs(frames) do
-		if hpBars[v.bar] then
-			hpBars[v.bar]:SetStatusBarColor(HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue, HealCommSettings.healColor.alpha)
+	for unit,v in pairs(hpBars) do
+		if hpBars[unit] then
+			hpBars[unit]:SetStatusBarColor(HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue, HealCommSettings.healColor.alpha)
 		end
 	end
 end
