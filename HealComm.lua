@@ -1,8 +1,8 @@
 --[[
 	Author: Aviana
-	Last modified by: LiuCJonathan
+	Last modified by: SideFlanker
 	Notes: 
-		Documentation by LiuCJonathan.
+		Documentation by SideFlanker.
 		If the documentation mentions a "non-functional" variable/parameter, it means it has no use in that specific function
 		At some point, the ambiguous "self" parameter in some functions should be renamed to "frame"
 --]]
@@ -15,7 +15,7 @@ if not HealCommSettings then
 		overhealpercent = 20,
 		timeframe = 4,
 		showHots = true,
-		healColor = {red=0,green=1,blue=0,alpha=0.6}
+		healColor = {red=0,green=1,blue=0,alpha=1}
 	}
 end
 
@@ -47,7 +47,7 @@ local currentHeals = {}
 	Function: RaidPulloutButton_OnLoadHook
 	Purpose:(???)
 	Created by: Aviana
-	Last modified by: Aviana
+	Last modified by: SideFlanker
 	Inputs: Frame
 		Where Frame is a unit frame to update
 	Notes: 
@@ -127,7 +127,7 @@ end
 	Function: CompactUnitFrame_SetUnitHook
 	Purpose: Create new heal bar when a new unit joins the raid (?)
 	Created by: Aviana
-	Last modified by: Aviana
+	Last modified by: SideFlanker
 	Inputs: Frame, Unit
 		Where Frame is a parent frame to attach to
 		Where Unit is the UnitID of the unit being added
@@ -152,14 +152,14 @@ hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This
 	Function: OnInitialize
 	Purpose: Initalize necessary functions and set hooks, callbacks
 	Created by: Aviana
-	Last modified by: LiuCJonathan
+	Last modified by: SideFlanker
 ]]--
 function HealComm:OnInitialize()
 	--Initalize new options for 1.1.0
-	HealCommSettings.healColor = HealCommSettings.healColor or {red=0,green=1,blue=0,alpha=0.6}
+	HealCommSettings.healColor = HealCommSettings.healColor or {red=0,green=1,blue=0,alpha=1}
 	--Fix for users upgrading from 1.1.3 and earlier
 	if HealCommSettings.healColor.alpha > 1 then
-		HealCommSettings.healColor.alpha=0.6;
+		HealCommSettings.healColor.alpha=1;
 	end
 
 	self:CreateBars()
@@ -180,7 +180,7 @@ end
 	Function: CreateBars
 	Purpose: Create and initalize heal bars for all frames
 	Created by: Aviana
-	Last modified by: Aviana
+	Last modified by: SideFlanker
 ]]--
 function HealComm:CreateBars()
 	for unit,v in pairs(frames) do
@@ -200,8 +200,8 @@ end
 --[[
 	Function: UpdateBars
 	Purpose: Update the color of all heal bars
-	Created by: LiuCJonathan
-	Last modified by: LiuCJonathan
+	Created by: SideFlanker
+	Last modified by: SideFlanker
 ]]--
 function HealComm:UpdateBars()
 	for unit,v in pairs(hpBars) do
@@ -472,7 +472,7 @@ end
 	Code section: Config: Main Options Tab
 	Purpose: Add and attach options page
 	Created by: Aviana
-	Last modified by: LiuCJonathan
+	Last modified by: SideFlanker
 ]]--
 
 local options = CreateFrame("Frame", nil, InterfaceOptionsFramePanelContainer)
@@ -509,7 +509,7 @@ options:SetScript("OnShow", function(self)
 		Function: SliderConstructor
 		Purpose: Template for sliders
 		Created by: Aviana
-		Last modified by: LiuCJonathan
+		Last modified by: SideFlanker
 		Inputs: Name, Description, Function(frame_object, value)
 				Where frame_object is a frame to attach to
 				Where value is a variable to send slider value updates to
@@ -552,9 +552,9 @@ options:SetScript("OnShow", function(self)
 	version:SetText("Version: "..HealComm.version)
 	version:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -16)
 
-	local donate = self:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	donate:SetText("Donate to the original creator: paypal.me/LunaUnitFrames")
-	donate:SetPoint("TOPLEFT", version, "BOTTOMLEFT", 0, -16)
+	local credit = self:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	credit:SetText("Originally created by Aviana")
+	credit:SetPoint("TOPLEFT", version, "BOTTOMLEFT", 0, -16)
 
 	local showHots = BoxConstructor("Show Hots", "Show hots in the healing prediction", function(self, value) HealCommSettings.showHots = value end)
 	showHots:SetChecked(HealCommSettings.showHots)
