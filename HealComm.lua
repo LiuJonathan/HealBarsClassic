@@ -20,7 +20,8 @@ if not HealCommSettings then
 end
 
 HealComm = select(2, ...)
-HealComm.version = "1.1.5"
+--Remember to update version number!!
+HealComm.version = "1.1.7"
 
 local hpBars = {}
 
