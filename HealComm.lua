@@ -558,7 +558,7 @@ options:SetScript("OnShow", function(self)
 
 	local showHots = BoxConstructor("Show Hots", "Show hots in the healing prediction", function(self, value) HealCommSettings.showHots = value end)
 	showHots:SetChecked(HealCommSettings.showHots)
-	showHots:SetPoint("TOPLEFT", donate, "BOTTOMLEFT", 0, -16)
+	showHots:SetPoint("TOPLEFT", credit, "BOTTOMLEFT", 0, -16)
 
 	local overhealSlider = SliderConstructor("Extend Overheal", "How many percent of the frame to go over it when showing heals", function(self, value) HealCommSettings.overhealpercent = value end, false)
 	overhealSlider:SetMinMaxValues(0, 30)
