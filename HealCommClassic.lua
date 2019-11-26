@@ -21,6 +21,7 @@ end
 
 HealComm = select(2, ...)
 --Remember to update version number!!
+--Curseforge release starting from 1.1.7
 HealComm.version = "1.1.7"
 
 local hpBars = {}
