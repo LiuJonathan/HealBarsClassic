@@ -477,7 +477,7 @@ end
 ]]--
 
 local options = CreateFrame("Frame", nil, InterfaceOptionsFramePanelContainer)
-options.name = "HealComm"
+options.name = "HealCommClassic"
 options:Hide()
 options:SetScript("OnShow", function(self)
 
@@ -547,7 +547,7 @@ options:SetScript("OnShow", function(self)
 
 	local header = self:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
 	header:SetPoint("TOPLEFT", 16, -16)
-	header:SetText("HealComm")
+	header:SetText("HealCommClassic")
 
 	local version = self:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	version:SetText("Version: "..HealComm.version)
