@@ -22,7 +22,7 @@ end
 HealComm = select(2, ...)
 --Remember to update version number!!
 --Curseforge release starting from 1.1.7
-HealComm.version = "1.1.7"
+HealComm.version = "1.1.8"
 
 local hpBars = {}
 
@@ -563,14 +563,14 @@ options:SetScript("OnShow", function(self)
 	showHots:SetPoint("TOPLEFT", credit, "BOTTOMLEFT", 0, -16)
 
 	local overhealSlider = SliderConstructor("Extend Overheal", "How many percent of the frame to go over it when showing heals", function(self, value) HealCommSettings.overhealpercent = value end, false)
-	overhealSlider:SetMinMaxValues(0, 30)
+	overhealSlider:SetMinMaxValues(0, 50)
 	overhealSlider:SetValueStep(1)
 	overhealSlider:SetObeyStepOnDrag(true)
 	overhealSlider:SetValue(HealCommSettings.overhealpercent)
 	overhealSlider:SetPoint("TOPLEFT", showHots, "BOTTOMLEFT", 0, -16)
 
 	local timeframeSlider = SliderConstructor("Timeframe", "How many seconds to predict into the future", function(self, value) HealCommSettings.timeframe = value end, false)
-	timeframeSlider:SetMinMaxValues(3, 10)
+	timeframeSlider:SetMinMaxValues(3, 22)
 	timeframeSlider:SetValueStep(1)
 	timeframeSlider:SetObeyStepOnDrag(true)
 	timeframeSlider:SetValue(HealCommSettings.timeframe)
