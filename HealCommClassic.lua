@@ -5,6 +5,27 @@
 		Documentation by SideFlanker.
 		If the documentation mentions a "non-functional" variable/parameter, it means it has no use in that specific function
 		At some point, the ambiguous "self" parameter in some functions should be renamed to "frame"
+		
+	Table of contents, in order:
+		- General settings
+		- RaidPulloutButton_OnLoadHook
+		- UnitFrameHealthBar_OnValueChangedHook
+		- UnitFrameHealthBar_OnUpdateHook
+		- CompactUnitFrame_UpdateHealthHook
+		- CompactUnitFrame_UpdateMaxHealthHook
+		- CompactUnitFrame_SetUnitHook
+		- OnInitialize
+		- CreateBars
+		- UpdateBars
+		- UNIT_PET
+		- PLAYER_ROLES_ASSIGNED
+		- HealComm_HealUpdated
+		- HealComm_HealStopped
+		- HealComm_ModifierChanged
+		- HealComm_GUIDDisappeared
+		- UpdateIncoming
+		- UpdateFrame
+		- Options menu
 --]]
 
 
@@ -15,16 +36,20 @@ if not HealCommSettings then
 		overhealpercent = 20,
 		timeframe = 4,
 		showHots = true,
-		healColor = {red=0,green=1,blue=0,alpha=1}
+		seperateHotColor=true,
+		--color needs to be a 0-1 range for setstatusbarcolor
+		healColor = {red=0,green=1,blue=0,alpha=1},
+		healHotColor={red=0,green=1,blue=0,alpha=0.6}
 	}
 end
 
 HealComm = select(2, ...)
 --Remember to update version number!!
 --Curseforge release starting from 1.1.7
-HealComm.version = "1.1.8"
+HealComm.version = "1.2.0"
 
-local hpBars = {}
+local hpBars = {} --incoming castedHeals
+local hpHotBars={} --incoming HoTs
 
 local frames = {
 				["player"] = { bar = getglobal("PlayerFrameHealthBar"), frame = _G["PlayerFrame"] },
@@ -164,6 +189,7 @@ function HealComm:OnInitialize()
 	if HealCommSettings.healColor.alpha > 1 then
 		HealCommSettings.healColor.alpha=1;
 	end
+	--Initalize new options for 1.2.0
 
 	self:CreateBars()
 	hooksecurefunc("RaidPulloutButton_OnLoad", RaidPulloutButton_OnLoadHook)
