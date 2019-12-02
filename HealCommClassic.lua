@@ -18,6 +18,7 @@
 		- CreateBars
 		- UpdateBars
 		- UNIT_PET
+		- PLAYER_TARGET_CHANGED
 		- PLAYER_ROLES_ASSIGNED
 		- HealComm_HealUpdated
 		- HealComm_HealStopped
@@ -36,7 +37,7 @@ if not HealCommSettings then
 		overhealpercent = 20,
 		timeframe = 4,
 		showHots = true,
-		seperateHotColor=true,
+		seperateHots=false,
 		--color needs to be a 0-1 range for setstatusbarcolor
 		healColor = {red=0,green=1,blue=0,alpha=1},
 		healHotColor={red=0,green=1,blue=0,alpha=0.6}
@@ -46,7 +47,7 @@ end
 HealComm = select(2, ...)
 --Remember to update version number!!
 --Curseforge release starting from 1.1.7
-HealComm.version = "1.2.0"
+HealComm.version = "1.2.0 alpha"
 
 local hpBars = {} --incoming castedHeals
 local hpHotBars={} --incoming HoTs
@@ -69,6 +70,7 @@ local partyGUIDs = {
 	[UnitGUID("player")] = "player",
 }
 local currentHeals = {}
+local currentHots ={}
 
 --[[
 	Function: RaidPulloutButton_OnLoadHook
@@ -97,12 +99,12 @@ end
 	Function: UnitFrameHealthBar_OnValueChangedHook
 	Purpose: Updates unit frames when a unit's max health changes
 	Created by: Aviana
-	Last modified by: Aviana
+	Last modified by: SideFlanker
 	Inputs: Frame
 		Where Frame is a unit frame to update
 ]]--
 local function UnitFrameHealthBar_OnValueChangedHook(self)
-	HealComm:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0)
+	HealComm:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
 end
 
 
@@ -110,7 +112,7 @@ end
 	Function: UnitFrameHealthBar_OnUpdateHook
 	Purpose: Updates unit frames when a unit's health changes
 	Created by: Aviana
-	Last modified by: Aviana
+	Last modified by: SideFlanker
 	Inputs: Frame
 		Where Frame is a unit frame to update
 	Notes: 
@@ -118,7 +120,7 @@ end
 ]]--
 local function UnitFrameHealthBar_OnUpdateHook(self)
 	if self.unit ~= "player" then return end
-	HealComm:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0)
+	HealComm:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
 end
 hooksecurefunc("UnitFrameHealthBar_OnUpdate", UnitFrameHealthBar_OnUpdateHook) -- This needs early hooking
 
@@ -127,13 +129,13 @@ hooksecurefunc("UnitFrameHealthBar_OnUpdate", UnitFrameHealthBar_OnUpdateHook) -
 	Function: CompactUnitFrame_UpdateHealthHook
 	Purpose: Update heal bars when a unit's health changes
 	Created by: Aviana
-	Last modified by: Aviana
+	Last modified by: SideFlanker
 	Inputs: Frame
 		Where Frame is a unit frame to update
 ]]--
 local function CompactUnitFrame_UpdateHealthHook(self)
 	if not hpBars[self.healthBar] then return end
-	HealComm:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0)
+	HealComm:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
 end
 
 
@@ -147,7 +149,7 @@ end
 ]]--
 local function CompactUnitFrame_UpdateMaxHealthHook(self)
 	if not hpBars[self.healthBar] then return end
-	HealComm:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0)
+	HealComm:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
 end
 
 
@@ -190,6 +192,7 @@ function HealComm:OnInitialize()
 		HealCommSettings.healColor.alpha=1;
 	end
 	--Initalize new options for 1.2.0
+	HealCommSetings.healHotColor = HealCommSettings.healHotColor or {red=0,green=1,blue=0,alpha=0.6}
 
 	self:CreateBars()
 	hooksecurefunc("RaidPulloutButton_OnLoad", RaidPulloutButton_OnLoadHook)
@@ -245,7 +248,7 @@ end
 	Function: UNIT_PET
 	Purpose: Update pet heal bars
 	Created by: Aviana
-	Last modified by: Aviana
+	Last modified by: SideFlanker
 	Inputs: Unit
 		Where Unit is the UnitID of the pet being updated
 ]]--
@@ -262,12 +265,18 @@ function HealComm:UNIT_PET(unit)
 		partyGUIDs[UnitGUID(petunit)] = petunit
 	end
 	if hpBars[frames[petunit].bar] then
-		self:UpdateFrame(frames[petunit].bar, petunit, currentHeals[UnitGUID("pet")] or 0)
+		self:UpdateFrame(frames[petunit].bar, petunit, currentHeals[UnitGUID("pet")] or 0, currentHots[UnitGUID("pet")] or 0)
 	end
 end
 
+--[[
+	Function: PLAYER_TARGET_CHANGED
+	Purpose: Update player target heal bars
+	Created by: Aviana
+	Last modified by: SideFlanker
+]]--
 function HealComm:PLAYER_TARGET_CHANGED()
-	self:UpdateFrame(frames["target"].bar, "target", currentHeals[UnitGUID("target")] or 0)
+	self:UpdateFrame(frames["target"].bar, "target", currentHeals[UnitGUID("target")] or 0, currentHots[UnitGUID("target")] or 0)
 end
 
 
@@ -275,7 +284,7 @@ end
 	Function: PLAYER_ROLES_ASSIGNED
 	Purpose: Update party and raid heal bars after a raid role assignment
 	Created by: Aviana
-	Last modified by: Aviana
+	Last modified by: SideFlanker
 ]]--
 function HealComm:PLAYER_ROLES_ASSIGNED() 
 	local frame, unitframe, num
@@ -298,7 +307,7 @@ function HealComm:PLAYER_ROLES_ASSIGNED()
 		num = 1
 		while unitframe do
 			if unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) then
-				self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, amount)
+				self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, amount, hotAmount) --no amount declaration? call just hides bars
 			end
 			num = num + 1
 			unitframe = _G["CompactPartyFrameMember"..num]
@@ -307,7 +316,7 @@ function HealComm:PLAYER_ROLES_ASSIGNED()
 		num = 1
 		while unitframe do
 			if unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) then
-				self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, amount)
+				self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, amount, hotAmount)
 			end
 			num = num + 1
 			unitframe = _G["CompactRaidFrame"..num]
@@ -319,7 +328,7 @@ function HealComm:PLAYER_ROLES_ASSIGNED()
 			for z=1, frame.numPulloutButtons do
 				unitframe = getglobal(frame:GetName().."Button"..z)
 				if unitframe.unit and UnitExists(unitframe.unit) then
-					self:UpdateFrame(getglobal(unitframe:GetName().."HealthBar"), unitframe.unit, currentHeals[UnitGUID(unitframe.unit)] or 0)
+					self:UpdateFrame(getglobal(unitframe:GetName().."HealthBar"), unitframe.unit, currentHeals[UnitGUID(unitframe.unit)] or 0, currentHots[UnitGUID(unitframe.unit)] or 0)
 				end
 			end
 		end
@@ -329,7 +338,7 @@ function HealComm:PLAYER_ROLES_ASSIGNED()
 				for k=1, 5 do
 					unitframe = _G[grpHeader.."Member"..k]
 					if unitframe and unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) then
-						self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, currentHeals[UnitGUID(unitframe.displayedUnit)] or 0)
+						self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, currentHeals[UnitGUID(unitframe.displayedUnit)] or 0, currentHots[UnitGUID(unitframe.unit)] or 0)
 					end
 				end
 			end
@@ -401,13 +410,14 @@ end
 	Function: UpdateIncoming
 	Purpose: Stores incoming healing information from healcomm library
 	Created by: Aviana
-	Last modified by: Aviana
+	Last modified by: SideFlanker
 	Inputs: args
 			A table of GUIDs to update
 --]]
 function HealComm:UpdateIncoming(...)
 	local amount, targetGUID, num, frame, unitframe, healType
-	if HealCommSettings.showHots then
+	local hotType=libCHC.HOT_HEALS
+	if HealCommSettings.showHots and not HealCommSettings.seperateHots then
 		healType = libCHC.ALL_HEALS
 	else
 		healType = libCHC.CASTED_HEALS
@@ -415,19 +425,23 @@ function HealComm:UpdateIncoming(...)
 	for i=1, select("#", ...) do
 		targetGUID = select(i, ...)
 		amount = (libCHC:GetHealAmount(targetGUID, healType, GetTime()+ HealCommSettings.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
+		if(HealCommSettings.seperateHots) then
+			hotAmount= (libCHC:GetHealAmount(targetGUID, hotType, GetTime()+HealCommSettings.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
+		end
+		currentHots[targetGUID] = currentHots > 0 and amount
 		currentHeals[targetGUID] = amount > 0 and amount
 		if UnitGUID("target") == targetGUID then
-			self:UpdateFrame(frames["target"].bar, "target", amount)
+			self:UpdateFrame(frames["target"].bar, "target", amount, hotAmount)
 		end
 		if partyGUIDs[targetGUID] then
-			self:UpdateFrame(frames[partyGUIDs[targetGUID]].bar, partyGUIDs[targetGUID], amount)
+			self:UpdateFrame(frames[partyGUIDs[targetGUID]].bar, partyGUIDs[targetGUID], amount,hotAmount)
 		end
 		if UnitInParty("player") then
 			unitframe = _G["CompactPartyFrameMember1"]
 			num = 1
 			while unitframe do
 				if unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) and UnitGUID(unitframe.displayedUnit) == targetGUID then
-					self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, amount)
+					self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, amount, hotAmount)
 				end
 				num = num + 1
 				unitframe = _G["CompactPartyFrameMember"..num]
@@ -436,7 +450,7 @@ function HealComm:UpdateIncoming(...)
 			num = 1
 			while unitframe do
 				if unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) and UnitGUID(unitframe.displayedUnit) == targetGUID then
-					self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, amount)
+					self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, amount, hotAmount)
 				end
 				num = num + 1
 				unitframe = _G["CompactRaidFrame"..num]
@@ -448,7 +462,7 @@ function HealComm:UpdateIncoming(...)
 				for z=1, frame.numPulloutButtons do
 					unitframe = getglobal(frame:GetName().."Button"..z)
 					if unitframe.unit and UnitExists(unitframe.unit) and UnitGUID(unitframe.unit) == targetGUID then
-						self:UpdateFrame(getglobal(unitframe:GetName().."HealthBar"), unitframe.unit, amount)
+						self:UpdateFrame(getglobal(unitframe:GetName().."HealthBar"), unitframe.unit, amount, hotAmount)
 					end
 				end
 			end
@@ -458,7 +472,7 @@ function HealComm:UpdateIncoming(...)
 					for k=1, 5 do
 						unitframe = _G[grpHeader.."Member"..k]
 						if unitframe and unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) and UnitGUID(unitframe.displayedUnit) == targetGUID then
-							self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, currentHeals[UnitGUID(unitframe.displayedUnit)] or 0)
+							self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, currentHeals[UnitGUID(unitframe.displayedUnit)] or 0, currentHots[UnitGUID(unitframe.displayedUnit)] or 0)
 						end
 					end
 				end
@@ -472,13 +486,14 @@ end
 	Function: UpdateFrame
 	Purpose: Updates heal bar sizes based on incoming healing
 	Created by: Aviana
-	Last modified by: Aviana
-	Inputs: Frame, Unit, HealAmount
+	Last modified by: SideFlanker
+	Inputs: Frame, Unit, Amount, hotAmount
 		Where Frame is the heal bar frame to update
 		Where Unit is the UnitID that the heal bar references
-		Where HealAmount is the amount of incoming healing
+		Where Amount is the amount of incoming healing
+		Where hotAmount is the amount of incoming HoTs
 --]]
-function HealComm:UpdateFrame(frame, unit, amount)
+function HealComm:UpdateFrame(frame, unit, amount, hotAmount)
 	local health, maxHealth = UnitHealth(unit), UnitHealthMax(unit)
 	if( amount and amount > 0 and (health < maxHealth or HealCommSettings.overhealpercent > 0 )) and frame:IsVisible() then
 		hpBars[frame]:Show()
@@ -585,16 +600,20 @@ options:SetScript("OnShow", function(self)
 	credit:SetText("Originally created by Aviana")
 	credit:SetPoint("TOPLEFT", version, "BOTTOMLEFT", 0, -16)
 
-	local showHots = BoxConstructor("Show Hots", "Show hots in the healing prediction", function(self, value) HealCommSettings.showHots = value end)
+	local showHots = BoxConstructor("Show HoTs", "Show HoTs in the healing prediction", function(self, value) HealCommSettings.showHots = value end)
 	showHots:SetChecked(HealCommSettings.showHots)
 	showHots:SetPoint("TOPLEFT", credit, "BOTTOMLEFT", 0, -16)
+	
+	local seperateHots = BoxConstructor("Seperate HoT Color", "Show HoTs as a seperate color. WARNING: EXPERIMENTAL STAGE. PLEASE REPORT BUGS AT https://www.curseforge.com/wow/addons/healcommclassic", function(self,value) HealCommSettings.seperateHots=value end)
+	seperateHots:SetChecked(HealCommSettings.seperateHots)
+	seperateHots:SetPoint("TOPLEFT", showHots,"BOTTOMLEFT",0,-16)
 
 	local overhealSlider = SliderConstructor("Extend Overheal", "How many percent of the frame to go over it when showing heals", function(self, value) HealCommSettings.overhealpercent = value end, false)
 	overhealSlider:SetMinMaxValues(0, 50)
 	overhealSlider:SetValueStep(1)
 	overhealSlider:SetObeyStepOnDrag(true)
 	overhealSlider:SetValue(HealCommSettings.overhealpercent)
-	overhealSlider:SetPoint("TOPLEFT", showHots, "BOTTOMLEFT", 0, -16)
+	overhealSlider:SetPoint("TOPLEFT", seperateHots, "BOTTOMLEFT", 0, -16)
 
 	local timeframeSlider = SliderConstructor("Timeframe", "How many seconds to predict into the future", function(self, value) HealCommSettings.timeframe = value end, false)
 	timeframeSlider:SetMinMaxValues(3, 22)
