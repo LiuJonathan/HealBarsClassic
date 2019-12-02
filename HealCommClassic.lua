@@ -57,6 +57,7 @@ local currentHeals = {}
 ]]--
 local function RaidPulloutButton_OnLoadHook(self)
 	if not hpBars[self] then
+		print("RAIDPULLOUT::"..self:GetParent():GetName())
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")] = CreateFrame("StatusBar", self:GetName().."HealthBarIncHeal" , self)
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetFrameStrata("LOW")
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetFrameLevel(hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:GetFrameLevel()-1)
@@ -99,7 +100,7 @@ hooksecurefunc("UnitFrameHealthBar_OnUpdate", UnitFrameHealthBar_OnUpdateHook) -
 
 --[[
 	Function: CompactUnitFrame_UpdateHealthHook
-	Purpose: Update raid heal bars when a unit's health changes
+	Purpose: Update heal bars when a unit's health changes
 	Created by: Aviana
 	Last modified by: Aviana
 	Inputs: Frame
@@ -127,7 +128,7 @@ end
 
 --[[
 	Function: CompactUnitFrame_SetUnitHook
-	Purpose: Create new heal bar when a new unit joins the raid (?)
+	Purpose: Create a new heal bar whenever any frame is assigned a new unit
 	Created by: Aviana
 	Last modified by: SideFlanker
 	Inputs: Frame, Unit
@@ -372,7 +373,7 @@ end
 
 --[[
 	Function: UpdateIncoming
-	Purpose: HealCommLib callback handler. Updates heal bars
+	Purpose: Stores incoming healing information from healcomm library
 	Created by: Aviana
 	Last modified by: Aviana
 	Inputs: args
@@ -443,7 +444,7 @@ end
 
 --[[
 	Function: UpdateFrame
-	Purpose: HealCommLib callback handler. Updates heal bars
+	Purpose: Updates heal bar sizes based on incoming healing
 	Created by: Aviana
 	Last modified by: Aviana
 	Inputs: Frame, Unit, HealAmount
