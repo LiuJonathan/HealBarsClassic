@@ -50,7 +50,7 @@ HealComm = select(2, ...)
 HealComm.version = "1.2.0 alpha"
 
 local hpBars = {} --incoming castedHeals
-local hpHotBars={} --incoming HoTs
+local hotBars={} --incoming HoTs
 
 local frames = {
 				["player"] = { bar = getglobal("PlayerFrameHealthBar"), frame = _G["PlayerFrame"] },
@@ -84,7 +84,6 @@ local currentHots ={}
 ]]--
 local function RaidPulloutButton_OnLoadHook(self)
 	if not hpBars[self] then
-		print("RAIDPULLOUT::"..self:GetParent():GetName())
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")] = CreateFrame("StatusBar", self:GetName().."HealthBarIncHeal" , self)
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetFrameStrata("LOW")
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetFrameLevel(hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:GetFrameLevel()-1)
@@ -134,7 +133,7 @@ hooksecurefunc("UnitFrameHealthBar_OnUpdate", UnitFrameHealthBar_OnUpdateHook) -
 		Where Frame is a unit frame to update
 ]]--
 local function CompactUnitFrame_UpdateHealthHook(self)
-	if not hpBars[self.healthBar] then return end
+	if not hpBars[self.healthBar] and not hotBars[self.healthBar] then return end
 	HealComm:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
 end
 
@@ -143,12 +142,12 @@ end
 	Function: CompactUnitFrame_UpdateMaxHealthHook
 	Purpose: Update heal calculations after a max health change
 	Created by: Aviana
-	Last modified by: Aviana
+	Last modified by: SideFlanker
 	Inputs: Frame
 		Where Frame is a unit frame to update
 ]]--
 local function CompactUnitFrame_UpdateMaxHealthHook(self)
-	if not hpBars[self.healthBar] then return end
+	if not hpBars[self.healthBar] and not hotBars[self.healthBar] then return end
 	HealComm:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
 end
 
@@ -174,6 +173,15 @@ local function CompactUnitFrame_SetUnitHook(self, unit)
 		hpBars[self.healthBar]:SetValue(1)
 		hpBars[self.healthBar]:SetStatusBarColor(HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue, HealCommSettings.healColor.alpha)
 	end
+	if not hotBars[self.healthBar] then
+		hotBars[self.healthBar] = CreateFrame("StatusBar", nil, self)
+		hotBars[self.healthBar]:SetFrameStrata("LOW")
+		hotBars[self.healthBar]:SetFrameLevel(hotBars[self.healthBar]:GetFrameLevel()-1)
+		hotBars[self.healthBar]:SetStatusBarTexture("Interface\\RaidFrame\\Raid-Bar-Hp-Fill")
+		hotBars[self.healthBar]:SetMinMaxValues(0, 1)
+		hotBars[self.healthBar]:SetValue(1)
+		hotBars[self.healthBar]:SetStatusBarColor(HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue, HealCommSettings.healColor.alpha)
+	end
 end
 hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This needs early hooking
 
@@ -192,7 +200,7 @@ function HealComm:OnInitialize()
 		HealCommSettings.healColor.alpha=1;
 	end
 	--Initalize new options for 1.2.0
-	HealCommSetings.healHotColor = HealCommSettings.healHotColor or {red=0,green=1,blue=0,alpha=0.6}
+	HealCommSettings.healHotColor = HealCommSettings.healHotColor or {red=0,green=1,blue=0,alpha=0.6}
 
 	self:CreateBars()
 	hooksecurefunc("RaidPulloutButton_OnLoad", RaidPulloutButton_OnLoadHook)
@@ -224,6 +232,15 @@ function HealComm:CreateBars()
 			hpBars[v.bar]:SetMinMaxValues(0, 1)
 			hpBars[v.bar]:SetValue(1)
 			hpBars[v.bar]:SetStatusBarColor(HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue, HealCommSettings.healColor.alpha)
+		end
+		if not hotBars[v] then
+			hotBars[v.bar] = CreateFrame("StatusBar", "IncHotBar"..unit, v.frame)
+			hotBars[v.bar]:SetFrameStrata("LOW")
+			hotBars[v.bar]:SetFrameLevel(hotBars[v.bar]:GetFrameLevel()-1)
+			hotBars[v.bar]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+			hotBars[v.bar]:SetMinMaxValues(0, 1)
+			hotBars[v.bar]:SetValue(1)
+			hotBars[v.bar]:SetStatusBarColor(HealCommSettings.healHotColor.red, HealCommSettings.healHotColor.green, HealCommSettings.healHotColor.blue, HealCommSettings.healHotColor.alpha)
 		end
 	end
 end
@@ -264,7 +281,7 @@ function HealComm:UNIT_PET(unit)
 	if UnitExists(petunit) then
 		partyGUIDs[UnitGUID(petunit)] = petunit
 	end
-	if hpBars[frames[petunit].bar] then
+	if hpBars[frames[petunit].bar] or hotBars[frames[petunit].bar] then
 		self:UpdateFrame(frames[petunit].bar, petunit, currentHeals[UnitGUID("pet")] or 0, currentHots[UnitGUID("pet")] or 0)
 	end
 end
@@ -428,7 +445,7 @@ function HealComm:UpdateIncoming(...)
 		if(HealCommSettings.seperateHots) then
 			hotAmount= (libCHC:GetHealAmount(targetGUID, hotType, GetTime()+HealCommSettings.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
 		end
-		currentHots[targetGUID] = currentHots > 0 and amount
+		currentHots[targetGUID] = hotAmount > 0 and amount
 		currentHeals[targetGUID] = amount > 0 and amount
 		if UnitGUID("target") == targetGUID then
 			self:UpdateFrame(frames["target"].bar, "target", amount, hotAmount)
@@ -494,7 +511,8 @@ end
 		Where hotAmount is the amount of incoming HoTs
 --]]
 function HealComm:UpdateFrame(frame, unit, amount, hotAmount)
-	local health, maxHealth = UnitHealth(unit), UnitHealthMax(unit), healthWidth = frame:GetWidth() * (health / maxHealth)
+	local health, maxHealth = UnitHealth(unit), UnitHealthMax(unit)
+	local healthWidth = frame:GetWidth() * (health / maxHealth)
 	if( amount and amount > 0 and (health < maxHealth or HealCommSettings.overhealpercent > 0 )) and frame:IsVisible() then
 		hpBars[frame]:Show()
 		local incWidth = frame:GetWidth() * (amount / maxHealth)
@@ -511,9 +529,10 @@ function HealComm:UpdateFrame(frame, unit, amount, hotAmount)
 	
 	if( hotAmount and hotAmount > 0 and (health < maxHealth or HealCommSettings.overhealpercent > 0 )) and frame:IsVisible() then
 		hotBars[frame]:Show()
-		local healWidth, hotWidth = frame:GetWidth() * (hotAmount / maxHealth)
-		if (hpBars[frame].IsVisible()) then
-			healWidth=hpBars[frame].getWidth()
+		local healWidth
+		local hotWidth = frame:GetWidth() * (hotAmount / maxHealth)
+		if (hpBars[frame] and hpBars[frame]:IsVisible()) then
+			healWidth=hpBars[frame]:getWidth()
 		else
 			healWidth=0
 		end
@@ -523,7 +542,6 @@ function HealComm:UpdateFrame(frame, unit, amount, hotAmount)
 		hotBars[frame]:SetWidth(hotWidth)
 		hotBars[frame]:SetHeight(frame:GetHeight())
 		hotBars[frame]:ClearAllPoints()
-		
 		hotBars[frame]:SetPoint("TOPLEFT", frame, "TOPLEFT", healthWidth + healWidth, 0)
 	else
 		hotBars[frame]:Hide()
