@@ -40,7 +40,7 @@ if not HealCommSettings then
 		seperateHots=false,
 		--color needs to be a 0-1 range for setstatusbarcolor
 		healColor = {red=0,green=1,blue=0,alpha=1},
-		healHotColor={red=0,green=1,blue=0,alpha=0.6}
+		hotColor={red=0,green=1,blue=0,alpha=0.6}
 	}
 end
 
@@ -51,6 +51,7 @@ HealComm.version = "1.2.0 alpha"
 
 local hpBars = {} --incoming castedHeals
 local hotBars={} --incoming HoTs
+local healColor,hotColor
 
 local frames = {
 				["player"] = { bar = getglobal("PlayerFrameHealthBar"), frame = _G["PlayerFrame"] },
@@ -200,7 +201,9 @@ function HealComm:OnInitialize()
 		HealCommSettings.healColor.alpha=1;
 	end
 	--Initalize new options for 1.2.0
-	HealCommSettings.healHotColor = HealCommSettings.healHotColor or {red=0,green=1,blue=0,alpha=0.6}
+	HealCommSettings.hotColor = HealCommSettings.hotColor or {red=0,green=1,blue=0,alpha=0.6}
+
+
 
 	self:CreateBars()
 	hooksecurefunc("RaidPulloutButton_OnLoad", RaidPulloutButton_OnLoadHook)
@@ -213,6 +216,7 @@ function HealComm:OnInitialize()
 	libCHC.RegisterCallback(HealComm, "HealComm_HealUpdated")
 	libCHC.RegisterCallback(HealComm, "HealComm_ModifierChanged")
 	libCHC.RegisterCallback(HealComm, "HealComm_GUIDDisappeared")
+
 end
 
 
@@ -240,7 +244,7 @@ function HealComm:CreateBars()
 			hotBars[v.bar]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
 			hotBars[v.bar]:SetMinMaxValues(0, 1)
 			hotBars[v.bar]:SetValue(1)
-			hotBars[v.bar]:SetStatusBarColor(HealCommSettings.healHotColor.red, HealCommSettings.healHotColor.green, HealCommSettings.healHotColor.blue, HealCommSettings.healHotColor.alpha)
+			hotBars[v.bar]:SetStatusBarColor(HealCommSettings.hotColor.red, HealCommSettings.hotColor.green, HealCommSettings.hotColor.blue, HealCommSettings.hotColor.alpha)
 		end
 	end
 end
@@ -255,7 +259,12 @@ end
 function HealComm:UpdateBars()
 	for unit,v in pairs(hpBars) do
 		if hpBars[unit] then
+			HealCommSettings.healColor=healColor
 			hpBars[unit]:SetStatusBarColor(HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue, HealCommSettings.healColor.alpha)
+		end
+		if hotBars[unit] then
+			HealCommSettings.hotColor=hotColor
+			hotBars[unit]:SetStatusBarColor(HealCommSettings.hotColor.red, HealCommSettings.hotColor.green, HealCommSettings.hotColor.blue, HealCommSettings.hotColor.alpha)
 		end
 	end
 end
@@ -445,8 +454,8 @@ function HealComm:UpdateIncoming(...)
 		if HealCommSettings.seperateHots then
 			hotAmount= (libCHC:GetHealAmount(targetGUID, hotType, GetTime()+HealCommSettings.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
 		end
-		currentHots[targetGUID] = hotAmount > 0 and hotAmount
-		currentHeals[targetGUID] = amount > 0 and amount
+		currentHots[targetGUID] = hotAmount and hotAmount > 0
+		currentHeals[targetGUID] = amount and amount > 0
 		if UnitGUID("target") == targetGUID then
 			self:UpdateFrame(frames["target"].bar, "target", amount, hotAmount)
 		end
@@ -618,6 +627,9 @@ options:SetScript("OnShow", function(self)
 	end
 
 	-- Options and text to be added
+	
+	healColor=HealCommSettings.healColor 
+	hotColor=HealCommSettings.hotColor
 
 	local header = self:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
 	header:SetPoint("TOPLEFT", 16, -16)
@@ -637,7 +649,7 @@ options:SetScript("OnShow", function(self)
 	
 	local seperateHots = BoxConstructor("Seperate HoT Color", "Show HoTs as a seperate color. WARNING: EXPERIMENTAL STAGE. PLEASE REPORT BUGS AT https://www.curseforge.com/wow/addons/healcommclassic", function(self,value) HealCommSettings.seperateHots=value end)
 	seperateHots:SetChecked(HealCommSettings.seperateHots)
-	seperateHots:SetPoint("TOPLEFT", showHots,"BOTTOMLEFT",0,-16)
+	seperateHots:SetPoint("TOPLEFT", showHots,"BOTTOMLEFT",0,-8)
 
 	local overhealSlider = SliderConstructor("Extend Overheal", "How many percent of the frame to go over it when showing heals", function(self, value) HealCommSettings.overhealpercent = value end, false)
 	overhealSlider:SetMinMaxValues(0, 50)
@@ -657,39 +669,68 @@ options:SetScript("OnShow", function(self)
 	colorLabel:SetText("Heal Color:")
 	colorLabel:SetPoint("TOPLEFT", timeframeSlider, "BOTTOMLEFT", 0, -36)
 	
-	local redSlider = SliderConstructor("Red", "What color to make the heal bars", function(self, value) HealCommSettings.healColor.red = value/255 end, false)
+	local redSlider = SliderConstructor("Red", "What color to make the heal bars", function(self, value) healColor.red = value/255 end, false)
 	redSlider:SetMinMaxValues(0, 255)
 	redSlider:SetValueStep(1)
 	redSlider:SetObeyStepOnDrag(true)
-	redSlider:SetValue(HealCommSettings.healColor.red*255)
+	redSlider:SetValue(healColor.red*255)
 	redSlider:SetPoint("TOPLEFT", colorLabel, "BOTTOMLEFT", 0, -22)
 	
-	local greenSlider = SliderConstructor("Green", "What color to make the heal bars", function(self, value) HealCommSettings.healColor.green = value/255 end, false)
+	local greenSlider = SliderConstructor("Green", "What color to make the heal bars", function(self, value) healColor.green = value/255 end, false)
 	greenSlider:SetMinMaxValues(0, 255)
 	greenSlider:SetValueStep(1)
 	greenSlider:SetObeyStepOnDrag(true)
-	greenSlider:SetValue(HealCommSettings.healColor.green*255)
+	greenSlider:SetValue(healColor.green*255)
 	greenSlider:SetPoint("TOPLEFT", redSlider, "BOTTOMLEFT", 0, -26)
 	
-	local blueSlider = SliderConstructor("Blue", "What color to make the heal bars", function(self, value) HealCommSettings.healColor.blue = value/255 end, false)
+	local blueSlider = SliderConstructor("Blue", "What color to make the heal bars", function(self, value) healColor.blue = value/255 end, false)
 	blueSlider:SetMinMaxValues(0, 255)
 	blueSlider:SetValueStep(1)
 	blueSlider:SetObeyStepOnDrag(true)
-	blueSlider:SetValue(HealCommSettings.healColor.blue*255)
+	blueSlider:SetValue(healColor.blue*255)
 	blueSlider:SetPoint("TOPLEFT", greenSlider, "BOTTOMLEFT", 0, -26)
 	
-	local alphaSlider = SliderConstructor("Alpha", "Set transparency of heal bars", function(self, value) HealCommSettings.healColor.alpha = value/100 end, true)
+	local alphaSlider = SliderConstructor("Alpha", "Set transparency of heal bars", function(self, value) healColor.alpha = value/100 end, true)
 	alphaSlider:SetMinMaxValues(0, 100)
 	alphaSlider:SetValueStep(1)
 	alphaSlider:SetObeyStepOnDrag(true)
-	alphaSlider:SetValue(HealCommSettings.healColor.alpha*100)
+	alphaSlider:SetValue(healColor.alpha*100)
 	alphaSlider:SetPoint("TOPLEFT", blueSlider, "BOTTOMLEFT", 0, -26)
 	
 	local updateColors = CreateFrame("Button", "updateHealColor", options, "UIPanelButtonTemplate")
 	updateColors:SetSize(80 ,22) 
-	updateColors:SetText("Apply color")
+	updateColors:SetText("Apply colors")
 	updateColors:SetPoint("TOPLEFT", alphaSlider, "BOTTOMLEFT", 0, -22)
 	updateColors:SetScript("OnClick",function()HealComm:UpdateBars() end)
+	
+	local redHotSlider = SliderConstructor("Red - HoT", "What color to make the heal bars", function(self, value) hotColor.red = value/255 end, false)
+	redHotSlider:SetMinMaxValues(0, 255)
+	redHotSlider:SetValueStep(1)
+	redHotSlider:SetObeyStepOnDrag(true)
+	redHotSlider:SetValue(hotColor.red*255)
+	redHotSlider:SetPoint("TOPLEFT", colorLabel, "BOTTOMLEFT", 150, -22)
+	
+	local greenHotSlider = SliderConstructor("Green - HoT", "What color to make the heal bars", function(self, value) hotColor.green = value/255 end, false)
+	greenHotSlider:SetMinMaxValues(0, 255)
+	greenHotSlider:SetValueStep(1)
+	greenHotSlider:SetObeyStepOnDrag(true)
+	greenHotSlider:SetValue(hotColor.green*255)
+	greenHotSlider:SetPoint("TOPLEFT", redHotSlider, "BOTTOMLEFT", 0, -26)
+	
+	local blueHotSlider = SliderConstructor("Blue - HoT", "What color to make the heal bars", function(self, value) hotColor.blue = value/255 end, false)
+	blueHotSlider:SetMinMaxValues(0, 255)
+	blueHotSlider:SetValueStep(1)
+	blueHotSlider:SetObeyStepOnDrag(true)
+	blueHotSlider:SetValue(hotColor.blue*255)
+	blueHotSlider:SetPoint("TOPLEFT", greenHotSlider, "BOTTOMLEFT", 0, -26)
+	
+	local alphaHotSlider = SliderConstructor("Alpha - HoT", "Set transparency of heal bars", function(self, value) hotColor.alpha = value/100 end, true)
+	alphaHotSlider:SetMinMaxValues(0, 100)
+	alphaHotSlider:SetValueStep(1)
+	alphaHotSlider:SetObeyStepOnDrag(true)
+	alphaHotSlider:SetValue(hotColor.alpha*100)
+	alphaHotSlider:SetPoint("TOPLEFT", blueHotSlider, "BOTTOMLEFT", 0, -26)
+
 
 	self:SetScript("OnShow", nil)
 end)
