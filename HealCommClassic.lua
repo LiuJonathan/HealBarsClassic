@@ -37,7 +37,7 @@ if not HealCommSettings then
 		overhealpercent = 20,
 		timeframe = 4,
 		showHots = true,
-		seperateHots=false,
+		seperateHots=true,
 		--color needs to be a 0-1 range for setstatusbarcolor
 		healColor = {red=0,green=1,blue=0,alpha=1},
 		hotColor={red=0,green=1,blue=0,alpha=0.6}
@@ -201,6 +201,9 @@ function HealComm:OnInitialize()
 		HealCommSettings.healColor.alpha=1;
 	end
 	--Initalize new options for 1.2.0
+	if HealCommSettings.seperateHots == nil then
+		HealCommSettings.seperateHots=true;
+	end
 	HealCommSettings.hotColor = HealCommSettings.hotColor or {red=0,green=1,blue=0,alpha=0.6}
 
 
@@ -647,7 +650,7 @@ options:SetScript("OnShow", function(self)
 	showHots:SetChecked(HealCommSettings.showHots)
 	showHots:SetPoint("TOPLEFT", credit, "BOTTOMLEFT", 0, -16)
 	
-	local seperateHots = BoxConstructor("Seperate HoT Color", "Show HoTs as a seperate color. WARNING: EXPERIMENTAL STAGE. PLEASE REPORT BUGS AT https://www.curseforge.com/wow/addons/healcommclassic", function(self,value) HealCommSettings.seperateHots=value end)
+	local seperateHots = BoxConstructor("Seperate HoT Color", "Show HoTs as a seperate color", function(self,value) HealCommSettings.seperateHots=value end)
 	seperateHots:SetChecked(HealCommSettings.seperateHots)
 	seperateHots:SetPoint("TOPLEFT", showHots,"BOTTOMLEFT",0,-8)
 
