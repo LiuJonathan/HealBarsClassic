@@ -442,10 +442,10 @@ function HealComm:UpdateIncoming(...)
 	for i=1, select("#", ...) do
 		targetGUID = select(i, ...)
 		amount = (libCHC:GetHealAmount(targetGUID, healType, GetTime()+ HealCommSettings.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
-		if(HealCommSettings.seperateHots) then
+		if HealCommSettings.seperateHots then
 			hotAmount= (libCHC:GetHealAmount(targetGUID, hotType, GetTime()+HealCommSettings.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
 		end
-		currentHots[targetGUID] = hotAmount > 0 and amount
+		currentHots[targetGUID] = hotAmount > 0 and hotAmount
 		currentHeals[targetGUID] = amount > 0 and amount
 		if UnitGUID("target") == targetGUID then
 			self:UpdateFrame(frames["target"].bar, "target", amount, hotAmount)
@@ -513,9 +513,9 @@ end
 function HealComm:UpdateFrame(frame, unit, amount, hotAmount)
 	local health, maxHealth = UnitHealth(unit), UnitHealthMax(unit)
 	local healthWidth = frame:GetWidth() * (health / maxHealth)
+	local incWidth = frame:GetWidth() * (amount / maxHealth)
 	if( amount and amount > 0 and (health < maxHealth or HealCommSettings.overhealpercent > 0 )) and frame:IsVisible() then
 		hpBars[frame]:Show()
-		local incWidth = frame:GetWidth() * (amount / maxHealth)
 		if (healthWidth + incWidth) > (frame:GetWidth() * (1+(HealCommSettings.overhealpercent/100)) ) then
 			incWidth = frame:GetWidth() * (1+(HealCommSettings.overhealpercent/100)) - healthWidth
 		end
@@ -529,20 +529,14 @@ function HealComm:UpdateFrame(frame, unit, amount, hotAmount)
 	
 	if( hotAmount and hotAmount > 0 and (health < maxHealth or HealCommSettings.overhealpercent > 0 )) and frame:IsVisible() then
 		hotBars[frame]:Show()
-		local healWidth
 		local hotWidth = frame:GetWidth() * (hotAmount / maxHealth)
-		if (hpBars[frame] and hpBars[frame]:IsVisible()) then
-			healWidth=hpBars[frame]:getWidth()
-		else
-			healWidth=0
-		end
-		if (healthWidth + hotWidth + healWidth) > (frame:GetWidth() * (1+(HealCommSettings.overhealpercent/100)) ) then -- can be compressed with better math
-			hotWidth = frame:GetWidth() * (1+(HealCommSettings.overhealpercent/100)) - healthWidth - healWidth
+		if (healthWidth + hotWidth + incWidth) > (frame:GetWidth() * (1+(HealCommSettings.overhealpercent/100)) ) then -- can be compressed with better math
+			hotWidth = frame:GetWidth() * (1+(HealCommSettings.overhealpercent/100)) - healthWidth - incWidth
 		end
 		hotBars[frame]:SetWidth(hotWidth)
 		hotBars[frame]:SetHeight(frame:GetHeight())
 		hotBars[frame]:ClearAllPoints()
-		hotBars[frame]:SetPoint("TOPLEFT", frame, "TOPLEFT", healthWidth + healWidth, 0)
+		hotBars[frame]:SetPoint("TOPLEFT", frame, "TOPLEFT", healthWidth + incWidth, 0)
 	else
 		hotBars[frame]:Hide()
 	end
