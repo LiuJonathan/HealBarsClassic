@@ -454,8 +454,8 @@ function HealComm:UpdateIncoming(...)
 		if HealCommSettings.seperateHots then
 			hotAmount= (libCHC:GetHealAmount(targetGUID, hotType, GetTime()+HealCommSettings.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
 		end
-		currentHots[targetGUID] = hotAmount and hotAmount > 0
-		currentHeals[targetGUID] = amount and amount > 0
+		currentHots[targetGUID] = hotAmount 
+		currentHeals[targetGUID] = amount 
 		if UnitGUID("target") == targetGUID then
 			self:UpdateFrame(frames["target"].bar, "target", amount, hotAmount)
 		end
