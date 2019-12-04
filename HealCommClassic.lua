@@ -94,7 +94,7 @@ local function RaidPulloutButton_OnLoadHook(self)
 	if not hotBars[self] then
 		hotBars[getglobal(self:GetParent():GetName().."HealthBar")] = CreateFrame("StatusBar", self:GetName().."HotBarIncHeal" , self)
 		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetFrameStrata("LOW")
-		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetFrameLevel(hpBars[getglobal(self:GetParent():GetName().."HotBar")]:GetFrameLevel()-1)
+		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetFrameLevel(hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:GetFrameLevel()-1)
 		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
 		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetMinMaxValues(0, 1)
 		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetValue(1)
@@ -467,7 +467,7 @@ function HealComm:UpdateIncoming(...)
 		end
 		currentHots[targetGUID] = hotAmount 
 		currentHeals[targetGUID] = amount 
-		if UnitGUID("target") == targetGUID then
+		if UnitGUID("target") == targetGUID then 
 			self:UpdateFrame(frames["target"].bar, "target", amount, hotAmount)
 		end
 		if partyGUIDs[targetGUID] then
