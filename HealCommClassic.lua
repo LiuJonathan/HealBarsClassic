@@ -523,7 +523,8 @@ end
 		Where hotAmount is the amount of incoming HoTs
 --]]
 function HealComm:UpdateFrame(frame, unit, amount, hotAmount)
-	local health, maxHealth, healthWidth= UnitHealth(unit), UnitHealthMax(unit), frame:GetWidth() * (health / maxHealth)
+	local health, maxHealth= UnitHealth(unit), UnitHealthMax(unit)
+	local healthWidth=frame:GetWidth() * (health / maxHealth)
 	local incWidth=0
 	if( amount and amount > 0 and (health < maxHealth or HealCommSettings.overhealpercent > 0 )) and frame:IsVisible() then
 		hpBars[frame]:Show()
