@@ -35,19 +35,19 @@ local libCHC = LibStub("LibHealComm-4.0", true)
 if not HealCommSettings then
 	HealCommSettings = {
 		overhealpercent = 20,
-		timeframe = 4,
+		timeframe = 6,
 		showHots = true,
 		seperateHots=true,
 		--color needs to be a 0-1 range for setstatusbarcolor
-		healColor = {red=0,green=1,blue=0,alpha=1},
-		hotColor={red=0,green=1,blue=0,alpha=0.6}
+		healColor = {red=0,green=1,blue=50/255,alpha=1},
+		hotColor={red=120/255,green=210/255,blue=65/255,alpha=0.7}
 	}
 end
 
 HealComm = select(2, ...)
 --Remember to update version number!!
 --Curseforge release starting from 1.1.7
-HealComm.version = "1.2.0 alpha"
+HealComm.version = "1.2.0"
 
 local hpBars = {} --incoming castedHeals
 local hotBars={} --incoming HoTs
@@ -75,13 +75,11 @@ local currentHots ={}
 
 --[[
 	Function: RaidPulloutButton_OnLoadHook
-	Purpose:(???)
+	Purpose:Loads heal bars for new players joining raid
 	Created by: Aviana
 	Last modified by: SideFlanker
 	Inputs: Frame
 		Where Frame is a unit frame to update
-	Notes: 
-		Possibly removable without any functionality impact
 ]]--
 local function RaidPulloutButton_OnLoadHook(self)
 	if not hpBars[self] then
@@ -92,6 +90,15 @@ local function RaidPulloutButton_OnLoadHook(self)
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetMinMaxValues(0, 1)
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetValue(1)
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetStatusBarColor(HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue, HealCommSettings.healColor.alpha)
+	end
+	if not hotBars[self] then
+		hotBars[getglobal(self:GetParent():GetName().."HealthBar")] = CreateFrame("StatusBar", self:GetName().."HotBarIncHeal" , self)
+		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetFrameStrata("LOW")
+		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetFrameLevel(hpBars[getglobal(self:GetParent():GetName().."HotBar")]:GetFrameLevel()-1)
+		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetMinMaxValues(0, 1)
+		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetValue(1)
+		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetStatusBarColor(HealCommSettings.hotColor.red, HealCommSettings.hotColor.green, HealCommSettings.hotColor.blue, HealCommSettings.hotColor.alpha)
 	end
 end
 
@@ -195,7 +202,7 @@ hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This
 ]]--
 function HealComm:OnInitialize()
 	--Initalize new options for 1.1.0
-	HealCommSettings.healColor = HealCommSettings.healColor or {red=0,green=1,blue=0,alpha=1}
+	HealCommSettings.healColor = HealCommSettings.healColor or {red=0,green=1,blue=50/255,alpha=1}
 	--Fix for users upgrading from 1.1.3 and earlier
 	if HealCommSettings.healColor.alpha > 1 then
 		HealCommSettings.healColor.alpha=1;
@@ -204,9 +211,10 @@ function HealComm:OnInitialize()
 	if HealCommSettings.seperateHots == nil then
 		HealCommSettings.seperateHots=true;
 	end
-	HealCommSettings.hotColor = HealCommSettings.hotColor or {red=0,green=1,blue=0,alpha=0.6}
-
-
+	HealCommSettings.hotColor = HealCommSettings.hotColor or {red=120/255,green=210/255,blue=65/255,alpha=0.7}
+	healColor=HealCommSettings.healColor 
+	hotColor=HealCommSettings.hotColor
+	
 
 	self:CreateBars()
 	hooksecurefunc("RaidPulloutButton_OnLoad", RaidPulloutButton_OnLoadHook)
@@ -631,9 +639,6 @@ options:SetScript("OnShow", function(self)
 	end
 
 	-- Options and text to be added
-	
-	healColor=HealCommSettings.healColor 
-	hotColor=HealCommSettings.hotColor
 
 	local header = self:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
 	header:SetPoint("TOPLEFT", 16, -16)
