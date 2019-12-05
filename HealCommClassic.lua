@@ -42,10 +42,10 @@ if not HealCommSettings then
 	}
 end
 
-HealComm = select(2, ...)
+HealCommClassic = select(2, ...)
 --Remember to update version number!!
 --Curseforge release starting from 1.1.7
-HealComm.version = "1.2.0"
+HealCommClassic.version = "1.2.0"
 
 local hpBars = {} --incoming castedHeals
 local hotBars={} --incoming HoTs
@@ -109,7 +109,7 @@ end
 		Where self is a unit frame to update
 ]]--
 local function UnitFrameHealthBar_OnValueChangedHook(self)
-	HealComm:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
+	HealCommClassic:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
 end
 
 
@@ -125,7 +125,7 @@ end
 ]]--
 local function UnitFrameHealthBar_OnUpdateHook(self)
 	if self.unit ~= "player" then return end
-	HealComm:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
+	HealCommClassic:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
 end
 hooksecurefunc("UnitFrameHealthBar_OnUpdate", UnitFrameHealthBar_OnUpdateHook) -- This needs early hooking
 
@@ -140,7 +140,7 @@ hooksecurefunc("UnitFrameHealthBar_OnUpdate", UnitFrameHealthBar_OnUpdateHook) -
 ]]--
 local function CompactUnitFrame_UpdateHealthHook(self)
 	if not hpBars[self.healthBar] and not hotBars[self.healthBar] then return end
-	HealComm:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
+	HealCommClassic:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
 end
 
 
@@ -154,7 +154,7 @@ end
 ]]--
 local function CompactUnitFrame_UpdateMaxHealthHook(self)
 	if not hpBars[self.healthBar] and not hotBars[self.healthBar] then return end
-	HealComm:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
+	HealCommClassic:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
 end
 
 
@@ -198,7 +198,7 @@ hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This
 	Created by: Aviana
 	Last modified by: SideFlanker
 ]]--
-function HealComm:OnInitialize()
+function HealCommClassic:OnInitialize()
 	--Initalize new options for 1.1.0
 	HealCommSettings.healColor = HealCommSettings.healColor or {red=0,green=1,blue=50/255,alpha=1}
 	--Fix for users upgrading from 1.1.3 and earlier
@@ -221,12 +221,12 @@ function HealComm:OnInitialize()
 	hooksecurefunc("UnitFrameHealthBar_OnValueChanged", UnitFrameHealthBar_OnValueChangedHook)
 	hooksecurefunc("CompactUnitFrame_UpdateHealth", CompactUnitFrame_UpdateHealthHook)
 	hooksecurefunc("CompactUnitFrame_UpdateMaxHealth", CompactUnitFrame_UpdateMaxHealthHook)
-	libCHC.RegisterCallback(HealComm, "HealComm_HealStarted", "HealComm_HealUpdated")
-	libCHC.RegisterCallback(HealComm, "HealComm_HealStopped")
-	libCHC.RegisterCallback(HealComm, "HealComm_HealDelayed", "HealComm_HealUpdated")
-	libCHC.RegisterCallback(HealComm, "HealComm_HealUpdated")
-	libCHC.RegisterCallback(HealComm, "HealComm_ModifierChanged")
-	libCHC.RegisterCallback(HealComm, "HealComm_GUIDDisappeared")
+	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealStarted", "HealComm_HealUpdated")
+	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealStopped")
+	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealDelayed", "HealComm_HealUpdated")
+	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealUpdated")
+	libCHC.RegisterCallback(HealCommClassic, "HealComm_ModifierChanged")
+	libCHC.RegisterCallback(HealCommClassic, "HealComm_GUIDDisappeared")
 
 end
 
@@ -237,7 +237,7 @@ end
 	Created by: Aviana
 	Last modified by: SideFlanker
 ]]--
-function HealComm:CreateBars()
+function HealCommClassic:CreateBars()
 	for unit,v in pairs(frames) do
 		if not hpBars[v] then
 			hpBars[v.bar] = CreateFrame("StatusBar", "IncHealBar"..unit, v.frame)
@@ -267,7 +267,7 @@ end
 	Created by: SideFlanker
 	Last modified by: SideFlanker
 ]]--
-function HealComm:UpdateBars()
+function HealCommClassic:UpdateBars()
 	for unit,v in pairs(hpBars) do
 		if hpBars[unit] then
 			HealCommSettings.healColor=healColor
@@ -289,7 +289,7 @@ end
 	Inputs: Unit
 		Where Unit is the UnitID of the pet being updated
 ]]--
-function HealComm:UNIT_PET(unit)
+function HealCommClassic:UNIT_PET(unit)
 	if unit ~= "player" and strsub(unit,1,5) ~= "party" then return end
 	petunit = unit == "player" and "pet" or "partypet"..strsub(unit,6)
 	for guid,unit in pairs(partyGUIDs) do
@@ -312,7 +312,7 @@ end
 	Created by: Aviana
 	Last modified by: SideFlanker
 ]]--
-function HealComm:PLAYER_TARGET_CHANGED()
+function HealCommClassic:PLAYER_TARGET_CHANGED()
 	self:UpdateFrame(frames["target"].bar, "target", currentHeals[UnitGUID("target")] or 0, currentHots[UnitGUID("target")] or 0)
 end
 
@@ -323,7 +323,7 @@ end
 	Created by: Aviana
 	Last modified by: SideFlanker
 ]]--
-function HealComm:PLAYER_ROLES_ASSIGNED() 
+function HealCommClassic:PLAYER_ROLES_ASSIGNED() 
 	local frame, unitframe, num
 	for guid,unit in pairs(partyGUIDs) do
 		if strsub(unit,1,5) == "party" then
@@ -385,7 +385,7 @@ end
 
 
 --[[
-	Function: HealComm_HealUpdated
+	Function: HealCommClassic_HealUpdated
 	Purpose: HealCommLib callback handler
 			Redirect callback
 	Created by: Aviana
@@ -394,7 +394,7 @@ end
 			Where event, casterGUID, spellID, etc. are non-functional
 			Where args is a table of GUIDs to update
 --]]
-function HealComm:HealComm_HealUpdated(event, casterGUID, spellID, healType, endTime, ...)
+function HealCommClassic:HealComm_HealUpdated(event, casterGUID, spellID, healType, endTime, ...)
 	self:UpdateIncoming(...)
 end
 
@@ -409,7 +409,7 @@ end
 			Where event, casterGUID, spellID, etc. are non-functional
 			Where args is a table of GUIDs to update
 --]]
-function HealComm:HealComm_HealStopped(event, casterGUID, spellID, healType, interrupted, ...)
+function HealCommClassic:HealComm_HealStopped(event, casterGUID, spellID, healType, interrupted, ...)
 	self:UpdateIncoming(...)
 end
 
@@ -424,7 +424,7 @@ end
 			Where Event is non-functional
 			Where GUID is the GUID to update
 --]]
-function HealComm:HealComm_ModifierChanged(event, guid)
+function HealCommClassic:HealComm_ModifierChanged(event, guid)
 	self:UpdateIncoming(guid)
 end
 
@@ -438,7 +438,7 @@ end
 			Where Event is non-functional
 			Where GUID is the GUID that disappeared
 --]]
-function HealComm:HealComm_GUIDDisappeared(event, guid)
+function HealCommClassic:HealComm_GUIDDisappeared(event, guid)
 	self:UpdateIncoming(guid)
 end
 
@@ -451,7 +451,7 @@ end
 	Inputs: args
 			A table of GUIDs to update
 --]]
-function HealComm:UpdateIncoming(...)
+function HealCommClassic:UpdateIncoming(...)
 	local amount, targetGUID, num, frame, unitframe, healType
 	local hotType=libCHC.HOT_HEALS
 	if HealCommSettings.showHots and not HealCommSettings.seperateHots then
@@ -530,7 +530,7 @@ end
 		Where Amount is the amount of incoming healing
 		Where hotAmount is the amount of incoming HoTs
 --]]
-function HealComm:UpdateFrame(frame, unit, amount, hotAmount)
+function HealCommClassic:UpdateFrame(frame, unit, amount, hotAmount)
 	local health, maxHealth= UnitHealth(unit), UnitHealthMax(unit)
 	local healthWidth=frame:GetWidth() * (health / maxHealth)
 	local incWidth=0
@@ -589,7 +589,7 @@ options:SetScript("OnShow", function(self)
 	--]]
 	
 	local function BoxConstructor(name, desc, clickFunc)
-		local box = CreateFrame("CheckButton", "HealCommOptionsBox" .. name, self, "InterfaceOptionsCheckButtonTemplate")
+		local box = CreateFrame("CheckButton", "HealCommClassicOptionsBox" .. name, self, "InterfaceOptionsCheckButtonTemplate")
 		box:SetScript("OnClick", function(thisBox)
 			clickFunc(thisBox, thisBox:GetChecked())
 		end)
@@ -616,7 +616,7 @@ options:SetScript("OnShow", function(self)
 	--]]
 	
 	local function SliderConstructor(name, desc, valueFunc, percent)
-		local slider = CreateFrame("Slider", "HealCommOptionsSlider" .. name, self, "OptionsSliderTemplate")
+		local slider = CreateFrame("Slider", "HealCommClassicOptionsSlider" .. name, self, "OptionsSliderTemplate")
 		if percent == false then
 			slider:SetScript("OnValueChanged", function(thisSlider)
 				valueFunc(thisSlider, thisSlider:GetValue())
@@ -645,7 +645,7 @@ options:SetScript("OnShow", function(self)
 	header:SetText("HealCommClassic")
 
 	local version = self:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	version:SetText("Version: "..HealComm.version)
+	version:SetText("Version: "..HealCommClassic.version)
 	version:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -16)
 
 	local credit = self:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
@@ -710,7 +710,7 @@ options:SetScript("OnShow", function(self)
 	updateColors:SetSize(80 ,22) 
 	updateColors:SetText("Apply colors")
 	updateColors:SetPoint("TOPLEFT", alphaSlider, "BOTTOMLEFT", 0, -22)
-	updateColors:SetScript("OnClick",function()HealComm:UpdateBars() end)
+	updateColors:SetScript("OnClick",function()HealCommClassic:UpdateBars() end)
 	
 	local redHotSlider = SliderConstructor("Red - HoT", "What color to make the heal bars", function(self, value) hotColor.red = value/255 end, false)
 	redHotSlider:SetMinMaxValues(0, 255)
@@ -753,7 +753,7 @@ InterfaceOptions_AddCategory(options)
 
 --[[
 	Code section: Event Registration
-	Purpose: Set event to initalize HealComm on first login and 
+	Purpose: Set event to initalize HealCommClassic on first login and 
 			update targets after target/pet/raid role change
 	Created by: Aviana
 	Last modified by: Aviana
@@ -765,10 +765,10 @@ frame:RegisterEvent("PLAYER_ROLES_ASSIGNED")
 frame:RegisterEvent("UNIT_PET")
 frame:SetScript("OnEvent", function(self, event, ...)
 	if( event == "PLAYER_LOGIN" ) then
-		HealComm:OnInitialize()
+		HealCommClassic:OnInitialize()
 		self:UnregisterEvent("PLAYER_LOGIN")
 	else
-		HealComm[event](HealComm, ...)
+		HealCommClassic[event](HealCommClassic, ...)
 	end
 end)
 
