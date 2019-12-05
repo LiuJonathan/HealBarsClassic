@@ -4,7 +4,6 @@
 	Notes: 
 		Documentation by SideFlanker.
 		If the documentation mentions a "non-functional" variable/parameter, it means it has no use in that specific function
-		
 	Table of contents, in order:
 		- General settings
 		- RaidPulloutButton_OnLoadHook
@@ -548,7 +547,7 @@ function HealComm:UpdateFrame(frame, unit, amount, hotAmount)
 	else
 		hpBars[frame]:Hide()
 	end
-	
+
 	if( hotAmount and hotAmount > 0 and (health < maxHealth or HealCommSettings.overhealpercent > 0 )) and frame:IsVisible() then
 		hotBars[frame]:Show()
 		local hotWidth = frame:GetWidth() * (hotAmount / maxHealth)
