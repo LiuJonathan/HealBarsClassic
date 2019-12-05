@@ -4,7 +4,6 @@
 	Notes: 
 		Documentation by SideFlanker.
 		If the documentation mentions a "non-functional" variable/parameter, it means it has no use in that specific function
-		At some point, the ambiguous "self" parameter in some functions should be renamed to "frame"
 		
 	Table of contents, in order:
 		- General settings
@@ -75,11 +74,11 @@ local currentHots ={}
 
 --[[
 	Function: RaidPulloutButton_OnLoadHook
-	Purpose:Loads heal bars for new players joining raid
+	Purpose: Creates heal bars for raid members upon joining a raid
 	Created by: Aviana
 	Last modified by: SideFlanker
-	Inputs: Frame
-		Where Frame is a unit frame to update
+	Inputs: self
+		Where self is a unit frame to update
 ]]--
 local function RaidPulloutButton_OnLoadHook(self)
 	if not hpBars[self] then
@@ -107,8 +106,8 @@ end
 	Purpose: Updates unit frames when a unit's max health changes
 	Created by: Aviana
 	Last modified by: SideFlanker
-	Inputs: Frame
-		Where Frame is a unit frame to update
+	Inputs: self
+		Where self is a unit frame to update
 ]]--
 local function UnitFrameHealthBar_OnValueChangedHook(self)
 	HealComm:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
@@ -120,8 +119,8 @@ end
 	Purpose: Updates unit frames when a unit's health changes
 	Created by: Aviana
 	Last modified by: SideFlanker
-	Inputs: Frame
-		Where Frame is a unit frame to update
+	Inputs: self
+		Where self is a unit frame to update
 	Notes: 
 		Function hook happens immediately after function definition	
 ]]--
@@ -137,8 +136,8 @@ hooksecurefunc("UnitFrameHealthBar_OnUpdate", UnitFrameHealthBar_OnUpdateHook) -
 	Purpose: Update heal bars when a unit's health changes
 	Created by: Aviana
 	Last modified by: SideFlanker
-	Inputs: Frame
-		Where Frame is a unit frame to update
+	Inputs: self
+		Where self is a unit frame to update
 ]]--
 local function CompactUnitFrame_UpdateHealthHook(self)
 	if not hpBars[self.healthBar] and not hotBars[self.healthBar] then return end
@@ -151,8 +150,8 @@ end
 	Purpose: Update heal calculations after a max health change
 	Created by: Aviana
 	Last modified by: SideFlanker
-	Inputs: Frame
-		Where Frame is a unit frame to update
+	Inputs: self
+		Where self is a unit frame to update
 ]]--
 local function CompactUnitFrame_UpdateMaxHealthHook(self)
 	if not hpBars[self.healthBar] and not hotBars[self.healthBar] then return end
@@ -165,8 +164,8 @@ end
 	Purpose: Create a new heal bar whenever any frame is assigned a new unit
 	Created by: Aviana
 	Last modified by: SideFlanker
-	Inputs: Frame, Unit
-		Where Frame is a parent frame to attach to
+	Inputs: self, Unit
+		Where self is a parent frame to attach to
 		Where Unit is the UnitID of the unit being added
 	Notes: 
 		Function hook happens immediately after function definition	
