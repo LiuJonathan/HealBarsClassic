@@ -462,7 +462,7 @@ function HealComm:UpdateIncoming(...)
 	for i=1, select("#", ...) do
 		targetGUID = select(i, ...)
 		amount = (libCHC:GetHealAmount(targetGUID, healType, GetTime()+ HealCommSettings.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
-		if HealCommSettings.seperateHots then
+		if HealCommSettings.seperateHots and HealCommSettings.showHots then
 			hotAmount= (libCHC:GetHealAmount(targetGUID, hotType, GetTime()+HealCommSettings.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
 		end
 		currentHots[targetGUID] = hotAmount 
