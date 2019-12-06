@@ -186,7 +186,7 @@ local function CompactUnitFrame_SetUnitHook(self, unit)
 		hotBars[self.healthBar]:SetStatusBarTexture("Interface\\RaidFrame\\Raid-Bar-Hp-Fill")
 		hotBars[self.healthBar]:SetMinMaxValues(0, 1)
 		hotBars[self.healthBar]:SetValue(1)
-		hotBars[self.healthBar]:SetStatusBarColor(HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue, HealCommSettings.healColor.alpha)
+		hotBars[self.healthBar]:SetStatusBarColor(HealCommSettings.hotColor.red, HealCommSettings.hotColor.green, HealCommSettings.hotColor.blue, HealCommSettings.hotColor.alpha)
 	end
 end
 hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This needs early hooking
