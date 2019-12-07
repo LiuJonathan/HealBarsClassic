@@ -140,7 +140,7 @@ hooksecurefunc("UnitFrameHealthBar_OnUpdate", UnitFrameHealthBar_OnUpdateHook) -
 ]]--
 local function CompactUnitFrame_UpdateHealthHook(self)
 	if not hpBars[self.healthBar] and not hotBars[self.healthBar] then return end
-	HealCommClassic:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
+	HealCommClassic:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0, currentHots[UnitGUID(self.displayedUnit)] or 0)
 end
 
 
@@ -154,7 +154,7 @@ end
 ]]--
 local function CompactUnitFrame_UpdateMaxHealthHook(self)
 	if not hpBars[self.healthBar] and not hotBars[self.healthBar] then return end
-	HealCommClassic:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
+	HealCommClassic:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0, currentHots[UnitGUID(self.displayedUnit)] or 0)
 end
 
 
@@ -375,7 +375,7 @@ function HealCommClassic:PLAYER_ROLES_ASSIGNED()
 				for k=1, 5 do
 					unitframe = _G[grpHeader.."Member"..k]
 					if unitframe and unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) then
-						self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, currentHeals[UnitGUID(unitframe.displayedUnit)] or 0, currentHots[UnitGUID(unitframe.unit)] or 0)
+						self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, currentHeals[UnitGUID(unitframe.displayedUnit)] or 0, currentHots[UnitGUID(unitframe.displayedUnit)] or 0)
 					end
 				end
 			end
