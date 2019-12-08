@@ -452,7 +452,7 @@ end
 			A table of GUIDs to update
 --]]
 function HealCommClassic:UpdateIncoming(...)
-	local amount, targetGUID, num, frame, unitframe, healType
+	local targetGUID, num, frame, unitframe, healType
 	local hotType=libCHC.HOT_HEALS
 	if HealCommSettings.showHots and not HealCommSettings.seperateHots then
 		healType = libCHC.ALL_HEALS
@@ -460,6 +460,7 @@ function HealCommClassic:UpdateIncoming(...)
 		healType = libCHC.CASTED_HEALS
 	end
 	for i=1, select("#", ...) do
+		local amount, hotAmount
 		targetGUID = select(i, ...)
 		amount = (libCHC:GetHealAmount(targetGUID, healType, GetTime()+ HealCommSettings.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
 		if HealCommSettings.seperateHots and HealCommSettings.showHots then
