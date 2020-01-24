@@ -35,7 +35,7 @@ if not HealCommSettings then
 		--color needs to be a 0-1 range for setstatusbarcolor
 		healColor = {red=0,green=1,blue=50/255,alpha=1},
 		hotColor={red=120/255,green=210/255,blue=65/255,alpha=0.7},
-		statusText = true
+		statusText = false
 	}
 end
 
