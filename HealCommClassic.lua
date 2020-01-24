@@ -1,11 +1,6 @@
 --[[
-	Author: Aviana
-	Last modified by: SideFlanker
-	Notes: 
-		Documentation by SideFlanker.
-		If the documentation mentions a "non-functional" variable/parameter, it means it has no use in that specific function
 	Table of contents, in order:
-		- General settings
+		- *General settings
 		- RaidPulloutButton_OnLoadHook
 		- UnitFrameHealthBar_OnValueChangedHook
 		- UnitFrameHealthBar_OnUpdateHook
@@ -24,7 +19,8 @@
 		- HealComm_GUIDDisappeared
 		- UpdateIncoming
 		- UpdateFrame
-		- Options menu
+		- *Options menu
+		- *Event registration
 --]]
 
 
@@ -75,8 +71,6 @@ local currentHots ={}
 --[[
 	Function: RaidPulloutButton_OnLoadHook
 	Purpose: Creates heal bars for raid members upon joining a raid
-	Created by: Aviana
-	Last modified by: SideFlanker
 	Inputs: self
 		Where self is a unit frame to update
 ]]--
@@ -104,8 +98,6 @@ end
 --[[
 	Function: UnitFrameHealthBar_OnValueChangedHook
 	Purpose: Updates unit frames when a unit's max health changes
-	Created by: Aviana
-	Last modified by: SideFlanker
 	Inputs: self
 		Where self is a unit frame to update
 ]]--
@@ -117,8 +109,6 @@ end
 --[[
 	Function: UnitFrameHealthBar_OnUpdateHook
 	Purpose: Updates unit frames when a unit's health changes
-	Created by: Aviana
-	Last modified by: SideFlanker
 	Inputs: self
 		Where self is a unit frame to update
 	Notes: 
@@ -134,8 +124,6 @@ hooksecurefunc("UnitFrameHealthBar_OnUpdate", UnitFrameHealthBar_OnUpdateHook) -
 --[[
 	Function: CompactUnitFrame_UpdateHealthHook
 	Purpose: Update heal bars when a unit's health changes
-	Created by: Aviana
-	Last modified by: SideFlanker
 	Inputs: self
 		Where self is a unit frame to update
 ]]--
@@ -148,8 +136,6 @@ end
 --[[
 	Function: CompactUnitFrame_UpdateMaxHealthHook
 	Purpose: Update heal calculations after a max health change
-	Created by: Aviana
-	Last modified by: SideFlanker
 	Inputs: self
 		Where self is a unit frame to update
 ]]--
@@ -162,8 +148,6 @@ end
 --[[
 	Function: CompactUnitFrame_SetUnitHook
 	Purpose: Create a new heal bar whenever any frame is assigned a new unit
-	Created by: Aviana
-	Last modified by: SideFlanker
 	Inputs: self, Unit
 		Where self is a parent frame to attach to
 		Where Unit is the UnitID of the unit being added
@@ -197,8 +181,6 @@ hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This
 --[[
 	Function: OnInitialize
 	Purpose: Initalize necessary functions and set hooks, callbacks
-	Created by: Aviana
-	Last modified by: SideFlanker
 ]]--
 function HealCommClassic:OnInitialize()
 	--Initalize new options for 1.1.0
@@ -300,8 +282,6 @@ end
 --[[
 	Function: CreateBars
 	Purpose: Create and initalize heal bars for all frames
-	Created by: Aviana
-	Last modified by: SideFlanker
 ]]--
 function HealCommClassic:CreateBars()
 	for unit,v in pairs(frames) do
@@ -330,8 +310,6 @@ end
 --[[
 	Function: UpdateBars
 	Purpose: Update the color of all heal bars
-	Created by: SideFlanker
-	Last modified by: SideFlanker
 ]]--
 function HealCommClassic:UpdateBars()
 	for unit,v in pairs(hpBars) do
@@ -350,8 +328,6 @@ end
 --[[`
 	Function: UNIT_PET
 	Purpose: Update pet heal bars
-	Created by: Aviana
-	Last modified by: SideFlanker
 	Inputs: Unit
 		Where Unit is the UnitID of the pet being updated
 ]]--
@@ -375,8 +351,6 @@ end
 --[[
 	Function: PLAYER_TARGET_CHANGED
 	Purpose: Update player target heal bars
-	Created by: Aviana
-	Last modified by: SideFlanker
 ]]--
 function HealCommClassic:PLAYER_TARGET_CHANGED()
 	self:UpdateFrame(frames["target"].bar, "target", currentHeals[UnitGUID("target")] or 0, currentHots[UnitGUID("target")] or 0)
@@ -386,8 +360,6 @@ end
 --[[
 	Function: PLAYER_ROLES_ASSIGNED
 	Purpose: Update party and raid heal bars after a raid role assignment
-	Created by: Aviana
-	Last modified by: SideFlanker
 ]]--
 function HealCommClassic:PLAYER_ROLES_ASSIGNED() 
 	local frame, unitframe, num
@@ -454,8 +426,6 @@ end
 	Function: HealCommClassic_HealUpdated
 	Purpose: HealCommLib callback handler
 			Redirect callback
-	Created by: Aviana
-	Last modified by: Aviana
 	Inputs: event, casterGUID, spellID, healType, interrupted, args
 			Where event, casterGUID, spellID, etc. are non-functional
 			Where args is a table of GUIDs to update
@@ -469,8 +439,6 @@ end
 	Function: HealComm_HealStopped
 	Purpose: HealCommLib callback handler
 			Redirect callback
-	Created by: Aviana
-	Last modified by: Aviana
 	Inputs: event, casterGUID, spellID, healType, interrupted, args
 			Where event, casterGUID, spellID, etc. are non-functional
 			Where args is a table of GUIDs to update
@@ -484,8 +452,6 @@ end
 	Function: HealComm_ModifierChanged
 	Purpose: HealCommLib callback handler
 			Redirect callback
-	Created by: Aviana
-	Last modified by: Aviana
 	Inputs: Event, GUID
 			Where Event is non-functional
 			Where GUID is the GUID to update
@@ -498,8 +464,6 @@ end
 --[[
 	Function: HealComm_GUIDDisappeared
 	Purpose: Update heal bars after a GUID disappears from view
-	Created by: Aviana
-	Last modified by: Aviana
 	Inputs: Event, GUID
 			Where Event is non-functional
 			Where GUID is the GUID that disappeared
@@ -512,8 +476,6 @@ end
 --[[
 	Function: UpdateIncoming
 	Purpose: Stores incoming healing information from healcomm library
-	Created by: Aviana
-	Last modified by: SideFlanker
 	Inputs: args
 			A table of GUIDs to update
 --]]
@@ -589,8 +551,6 @@ end
 --[[
 	Function: UpdateFrame
 	Purpose: Updates heal bar sizes based on incoming healing
-	Created by: Aviana
-	Last modified by: SideFlanker
 	Inputs: Frame, Unit, Amount, hotAmount
 		Where Frame is the heal bar frame to update
 		Where Unit is the UnitID that the heal bar references
@@ -638,8 +598,6 @@ end
 --[[
 	Code section: Config: Main Options Tab
 	Purpose: Add and attach options page
-	Created by: Aviana
-	Last modified by: SideFlanker
 ]]--
 
 local options = CreateFrame("Frame", nil, InterfaceOptionsFramePanelContainer)
@@ -830,8 +788,6 @@ InterfaceOptions_AddCategory(options)
 	Code section: Event Registration
 	Purpose: Set event to initalize HealCommClassic on first login and 
 			update targets after target/pet/raid role change
-	Created by: Aviana
-	Last modified by: Aviana
 --]]
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
