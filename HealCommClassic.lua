@@ -8,6 +8,7 @@
 		- CompactUnitFrame_UpdateMaxHealthHook
 		- CompactUnitFrame_SetUnitHook
 		- OnInitialize
+		- CompactUnitFrame_UpdateStatusTextNew
 		- CreateBars
 		- UpdateBars
 		- UNIT_PET
