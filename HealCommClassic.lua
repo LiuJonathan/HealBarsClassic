@@ -38,14 +38,15 @@ if not HealCommSettings then
 		seperateHots=true,
 		--color needs to be a 0-1 range for setstatusbarcolor
 		healColor = {red=0,green=1,blue=50/255,alpha=1},
-		hotColor={red=120/255,green=210/255,blue=65/255,alpha=0.7}
+		hotColor={red=120/255,green=210/255,blue=65/255,alpha=0.7},
+		statusText = true
 	}
 end
 
 HealCommClassic = select(2, ...)
 --Remember to update version number!!
 --Curseforge release starting from 1.1.7
-HealCommClassic.version = "1.2.3"
+HealCommClassic.version = "1.2.4"
 
 local hpBars = {} --incoming castedHeals
 local hotBars={} --incoming HoTs
@@ -170,6 +171,7 @@ end
 		Function hook happens immediately after function definition	
 ]]--
 local function CompactUnitFrame_SetUnitHook(self, unit)
+	if (self:IsForbidden()) then return end
 	if not hpBars[self.healthBar] then
 		hpBars[self.healthBar] = CreateFrame("StatusBar", nil, self)
 		hpBars[self.healthBar]:SetFrameStrata("LOW")
@@ -221,13 +223,77 @@ function HealCommClassic:OnInitialize()
 	hooksecurefunc("UnitFrameHealthBar_OnValueChanged", UnitFrameHealthBar_OnValueChangedHook)
 	hooksecurefunc("CompactUnitFrame_UpdateHealth", CompactUnitFrame_UpdateHealthHook)
 	hooksecurefunc("CompactUnitFrame_UpdateMaxHealth", CompactUnitFrame_UpdateMaxHealthHook)
+	CompactUnitFrame_UpdateStatusTextOld = CompactUnitFrame_UpdateStatusText
+	CompactUnitFrame_UpdateStatusText = CompactUnitFrame_UpdateStatusTextNew
 	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealStarted", "HealComm_HealUpdated")
 	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealStopped")
 	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealDelayed", "HealComm_HealUpdated")
 	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealUpdated")
 	libCHC.RegisterCallback(HealCommClassic, "HealComm_ModifierChanged")
 	libCHC.RegisterCallback(HealCommClassic, "HealComm_GUIDDisappeared")
+end
 
+function CompactUnitFrame_UpdateStatusTextNew(frame)
+
+	if ( not frame.statusText ) then
+		return;
+	end
+	if ( not frame.optionTable.displayStatusText ) then
+		frame.statusText:Hide();
+		return;
+	end
+
+	local currentHeals = currentHeals[UnitGUID(frame.displayedUnit)] or 0
+	local currentHots = currentHots[UnitGUID(frame.displayedUnit)] or 0
+
+	if ( not UnitIsConnected(frame.unit) ) then
+		frame.statusText:SetTextColor(0.5, 0.5, 0.5)
+		frame.statusText:SetText(PLAYER_OFFLINE)
+		frame.statusText:Show();
+	elseif ( UnitIsDeadOrGhost(frame.displayedUnit) ) then
+		frame.statusText:SetTextColor(0.5, 0.5, 0.5)
+		frame.statusText:SetText(DEAD);
+		frame.statusText:Show();
+	elseif ( frame.optionTable.healthText == "losthealth" or HealCommSettings.statusText ) then
+		local healthLost = UnitHealthMax(frame.displayedUnit) - UnitHealth(frame.displayedUnit)
+		local healthDelta = (currentHeals + currentHots) - healthLost
+		-- Default behavior with option turned off
+		if (not HealCommSettings.statusText) then
+			if ( healthLost > 0 ) then
+				frame.statusText:SetTextColor(0.5, 0.5, 0.5)
+				frame.statusText:SetFormattedText(LOST_HEALTH, healthLost);
+				frame.statusText:Show();
+			else
+				frame.statusText:Hide();
+			end			
+			return
+		end
+
+		-- New behavior with option turned onwww
+		if (healthDelta > 0) then
+			frame.statusText:SetTextColor(HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue)
+		elseif ( healthDelta < 0 ) then
+			frame.statusText:SetTextColor(0.5, 0.5, 0.5)
+		end
+
+		if (healthDelta == 0) then
+			frame.statusText:Hide();
+		else
+			frame.statusText:SetFormattedText("%d", healthDelta);
+			frame.statusText:Show();
+		end
+	elseif ( frame.optionTable.healthText == "health" ) then
+		frame.statusText:SetTextColor(0.5, 0.5, 0.5)
+		frame.statusText:SetText(UnitHealth(frame.displayedUnit));
+		frame.statusText:Show();
+	elseif ( (frame.optionTable.healthText == "perc") and (UnitHealthMax(frame.displayedUnit) > 0) ) then
+		frame.statusText:SetTextColor(0.5, 0.5, 0.5)
+		local perc = math.ceil(100 * (UnitHealth(frame.displayedUnit)/UnitHealthMax(frame.displayedUnit)));
+		frame.statusText:SetFormattedText("%d%%", perc);
+		frame.statusText:Show();
+	else
+		frame.statusText:Hide();
+	end
 end
 
 
@@ -535,6 +601,10 @@ function HealCommClassic:UpdateFrame(frame, unit, amount, hotAmount)
 	local health, maxHealth= UnitHealth(unit), UnitHealthMax(unit)
 	local healthWidth=frame:GetWidth() * (health / maxHealth)
 	local incWidth=0
+	local parent = frame:GetParent();
+
+	CompactUnitFrame_UpdateStatusText(parent)
+
 	if( amount and amount > 0 and (health < maxHealth or HealCommSettings.overhealpercent > 0 )) and frame:IsVisible() then
 		hpBars[frame]:Show()
 		incWidth = frame:GetWidth() * (amount / maxHealth)
@@ -653,9 +723,13 @@ options:SetScript("OnShow", function(self)
 	credit:SetText("Originally created by Aviana")
 	credit:SetPoint("TOPLEFT", version, "BOTTOMLEFT", 0, -16)
 
+	local statusText = BoxConstructor("Show Prediction Numbers", "Show prediction numbers in the status text (overrides raid profile settings)", function(self, value) HealCommSettings.statusText = value end)
+	statusText:SetChecked(HealCommSettings.statusText)
+	statusText:SetPoint("TOPLEFT", credit, "BOTTOMLEFT", 0, -16)
+
 	local showHots = BoxConstructor("Show HoTs", "Show HoTs in the healing prediction", function(self, value) HealCommSettings.showHots = value end)
 	showHots:SetChecked(HealCommSettings.showHots)
-	showHots:SetPoint("TOPLEFT", credit, "BOTTOMLEFT", 0, -16)
+	showHots:SetPoint("TOPLEFT", statusText, "BOTTOMLEFT", 0, -8)
 	
 	local seperateHots = BoxConstructor("Seperate HoT Color", "Show HoTs as a seperate color", function(self,value) HealCommSettings.seperateHots=value end)
 	seperateHots:SetChecked(HealCommSettings.seperateHots)
