@@ -155,7 +155,7 @@ end
 		Function hook happens immediately after function definition	
 ]]--
 local function CompactUnitFrame_SetUnitHook(self, unit)
-	if (self:IsForbidden()) then return end
+	if (self:IsForbidden()) then return end --Catch for forbidden nameplates in dungeons/raids
 	if not hpBars[self.healthBar] then
 		hpBars[self.healthBar] = CreateFrame("StatusBar", nil, self)
 		hpBars[self.healthBar]:SetFrameStrata("LOW")
