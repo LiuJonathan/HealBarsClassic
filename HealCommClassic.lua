@@ -215,6 +215,10 @@ function HealCommClassic:OnInitialize()
 	libCHC.RegisterCallback(HealCommClassic, "HealComm_GUIDDisappeared")
 end
 
+--[[
+	Function: CompactUnitFrame_UpdateStatusTextNew
+	Purpose: Handle status text features
+--]]
 function CompactUnitFrame_UpdateStatusTextNew(frame)
 
 	if ( not frame.statusText ) then
@@ -251,7 +255,7 @@ function CompactUnitFrame_UpdateStatusTextNew(frame)
 			return
 		end
 
-		-- New behavior with option turned onwww
+		-- New behavior with option turned on
 		if (healthDelta > 0) then
 			frame.statusText:SetTextColor(HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue)
 		elseif ( healthDelta < 0 ) then
