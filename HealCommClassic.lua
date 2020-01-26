@@ -259,11 +259,11 @@ function CompactUnitFrame_UpdateStatusTextNew(frame)
 		-- New behavior with option turned on
 		if (healthDelta > 0) then
 			frame.statusText:SetTextColor(HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue)
-		elseif ( healthDelta < 0 ) then
+		else
 			frame.statusText:SetTextColor(0.5, 0.5, 0.5)
 		end
 
-		if (healthDelta == 0) then
+		if (healthLost == 0) then
 			frame.statusText:Hide();
 		else
 			frame.statusText:SetFormattedText("%d", healthDelta);
