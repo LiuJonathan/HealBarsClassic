@@ -604,185 +604,78 @@ end
 	Code section: Config: Main Options Tab
 	Purpose: Add and attach options page
 ]]--
-
-local options = CreateFrame("Frame", nil, InterfaceOptionsFramePanelContainer)
-options.name = "HealCommClassic"
-options:Hide()
-options:SetScript("OnShow", function(self)
-
-	
-	--[[
-		Function: BoxConstructor
-		Purpose: Template for checkboxes
-		Created by: Aviana
-		Last modified by: Aviana
-		Inputs: Name, Description, Function(frame_object, value)
-				Where frame_object is a frame to attach to
-				Where value is a variable to send checkbox value updates to
-		Return: A new checkbox object
-	--]]
-	
-	local function BoxConstructor(name, desc, clickFunc)
-		local box = CreateFrame("CheckButton", "HealCommClassicOptionsBox" .. name, self, "InterfaceOptionsCheckButtonTemplate")
-		box:SetScript("OnClick", function(thisBox)
-			clickFunc(thisBox, thisBox:GetChecked())
-		end)
-		box.label = _G[box:GetName() .. "Text"]
-		box.label:SetText(name)
-		box.tooltipText = name
-		box.tooltipRequirement = desc
-		return box
-	end
-	
-	
-	--[[
-		Function: SliderConstructor
-		Purpose: Template for sliders
-		Created by: Aviana
-		Last modified by: SideFlanker
-		Inputs: Name, Description, Function(frame_object, value)
-				Where frame_object is a frame to attach to
-				Where value is a variable to send slider value updates to
-				Where percent is a boolean indicating whether or not show the value of the slider as 0.xx 
-		Return: A new slider object
-		Notes: 
-			Blizzard sliders do not like having non-integer steps
-	--]]
-	
-	local function SliderConstructor(name, desc, valueFunc, percent)
-		local slider = CreateFrame("Slider", "HealCommClassicOptionsSlider" .. name, self, "OptionsSliderTemplate")
-		if percent == false then
-			slider:SetScript("OnValueChanged", function(thisSlider)
-				valueFunc(thisSlider, thisSlider:GetValue())
-				thisSlider.High:SetText(thisSlider:GetValue())
-			end)
-		else
-			slider:SetScript("OnValueChanged", function(thisSlider)
-				valueFunc(thisSlider, thisSlider:GetValue())
-				thisSlider.High:SetText(thisSlider:GetValue()/100)
-			end)
-		end
-		slider.label = _G[slider:GetName() .. "Text"]
-		slider.label:SetText(name)
-		slider.Low:Hide()
-		slider.High:ClearAllPoints()
-		slider.High:SetPoint("TOP", slider, "BOTTOM", 0, 0)
-		slider.tooltipText = name
-		slider.tooltipRequirement = desc
-		return slider
-	end
-
-	-- Options and text to be added
-
-	local header = self:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-	header:SetPoint("TOPLEFT", 16, -16)
-	header:SetText("HealCommClassic")
-
-	local version = self:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	version:SetText("Version: "..HealCommClassic.version)
-	version:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -16)
-
-	local credit = self:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	credit:SetText("Originally created by Aviana")
-	credit:SetPoint("TOPLEFT", version, "BOTTOMLEFT", 0, -16)
-
-	local statusText = BoxConstructor("Show Prediction Numbers", "Show prediction numbers in the status text (overrides raid profile settings)", function(self, value) HealCommSettings.statusText = value end)
-	statusText:SetChecked(HealCommSettings.statusText)
-	statusText:SetPoint("TOPLEFT", credit, "BOTTOMLEFT", 0, -16)
-
-	local showHots = BoxConstructor("Show HoTs", "Show HoTs in the healing prediction", function(self, value) HealCommSettings.showHots = value end)
-	showHots:SetChecked(HealCommSettings.showHots)
-	showHots:SetPoint("TOPLEFT", statusText, "BOTTOMLEFT", 0, -8)
-	
-	local seperateHots = BoxConstructor("Seperate HoT Color", "Show HoTs as a seperate color", function(self,value) HealCommSettings.seperateHots=value end)
-	seperateHots:SetChecked(HealCommSettings.seperateHots)
-	seperateHots:SetPoint("TOPLEFT", showHots,"BOTTOMLEFT",0,-8)
-
-	local overhealSlider = SliderConstructor("Extend Overheal", "How many percent of the frame to go over it when showing heals", function(self, value) HealCommSettings.overhealpercent = value end, false)
-	overhealSlider:SetMinMaxValues(0, 50)
-	overhealSlider:SetValueStep(1)
-	overhealSlider:SetObeyStepOnDrag(true)
-	overhealSlider:SetValue(HealCommSettings.overhealpercent)
-	overhealSlider:SetPoint("TOPLEFT", seperateHots, "BOTTOMLEFT", 0, -16)
-
-	local timeframeSlider = SliderConstructor("Timeframe", "How many seconds to predict into the future", function(self, value) HealCommSettings.timeframe = value end, false)
-	timeframeSlider:SetMinMaxValues(3, 22)
-	timeframeSlider:SetValueStep(1)
-	timeframeSlider:SetObeyStepOnDrag(true)
-	timeframeSlider:SetValue(HealCommSettings.timeframe)
-	timeframeSlider:SetPoint("TOPLEFT", overhealSlider, "BOTTOMLEFT", 0, -26)
-	
-	local colorLabel = self:CreateFontString(nil, "ARTWORK", "GameFontHighlightLarge")
-	colorLabel:SetText("Heal Color:")
-	colorLabel:SetPoint("TOPLEFT", timeframeSlider, "BOTTOMLEFT", 0, -36)
-	
-	local redSlider = SliderConstructor("Red", "What color to make the heal bars", function(self, value) healColor.red = value/255 end, false)
-	redSlider:SetMinMaxValues(0, 255)
-	redSlider:SetValueStep(1)
-	redSlider:SetObeyStepOnDrag(true)
-	redSlider:SetValue(healColor.red*255)
-	redSlider:SetPoint("TOPLEFT", colorLabel, "BOTTOMLEFT", 0, -22)
-	
-	local greenSlider = SliderConstructor("Green", "What color to make the heal bars", function(self, value) healColor.green = value/255 end, false)
-	greenSlider:SetMinMaxValues(0, 255)
-	greenSlider:SetValueStep(1)
-	greenSlider:SetObeyStepOnDrag(true)
-	greenSlider:SetValue(healColor.green*255)
-	greenSlider:SetPoint("TOPLEFT", redSlider, "BOTTOMLEFT", 0, -26)
-	
-	local blueSlider = SliderConstructor("Blue", "What color to make the heal bars", function(self, value) healColor.blue = value/255 end, false)
-	blueSlider:SetMinMaxValues(0, 255)
-	blueSlider:SetValueStep(1)
-	blueSlider:SetObeyStepOnDrag(true)
-	blueSlider:SetValue(healColor.blue*255)
-	blueSlider:SetPoint("TOPLEFT", greenSlider, "BOTTOMLEFT", 0, -26)
-	
-	local alphaSlider = SliderConstructor("Alpha", "Set transparency of heal bars", function(self, value) healColor.alpha = value/100 end, true)
-	alphaSlider:SetMinMaxValues(0, 100)
-	alphaSlider:SetValueStep(1)
-	alphaSlider:SetObeyStepOnDrag(true)
-	alphaSlider:SetValue(healColor.alpha*100)
-	alphaSlider:SetPoint("TOPLEFT", blueSlider, "BOTTOMLEFT", 0, -26)
-	
-	local updateColors = CreateFrame("Button", "updateHealColor", options, "UIPanelButtonTemplate")
-	updateColors:SetSize(80 ,22) 
-	updateColors:SetText("Apply colors")
-	updateColors:SetPoint("TOPLEFT", alphaSlider, "BOTTOMLEFT", 0, -22)
-	updateColors:SetScript("OnClick",function()HealCommClassic:UpdateBars() end)
-	
-	local redHotSlider = SliderConstructor("Red - HoT", "What color to make the heal bars", function(self, value) hotColor.red = value/255 end, false)
-	redHotSlider:SetMinMaxValues(0, 255)
-	redHotSlider:SetValueStep(1)
-	redHotSlider:SetObeyStepOnDrag(true)
-	redHotSlider:SetValue(hotColor.red*255)
-	redHotSlider:SetPoint("TOPLEFT", colorLabel, "BOTTOMLEFT", 150, -22)
-	
-	local greenHotSlider = SliderConstructor("Green - HoT", "What color to make the heal bars", function(self, value) hotColor.green = value/255 end, false)
-	greenHotSlider:SetMinMaxValues(0, 255)
-	greenHotSlider:SetValueStep(1)
-	greenHotSlider:SetObeyStepOnDrag(true)
-	greenHotSlider:SetValue(hotColor.green*255)
-	greenHotSlider:SetPoint("TOPLEFT", redHotSlider, "BOTTOMLEFT", 0, -26)
-	
-	local blueHotSlider = SliderConstructor("Blue - HoT", "What color to make the heal bars", function(self, value) hotColor.blue = value/255 end, false)
-	blueHotSlider:SetMinMaxValues(0, 255)
-	blueHotSlider:SetValueStep(1)
-	blueHotSlider:SetObeyStepOnDrag(true)
-	blueHotSlider:SetValue(hotColor.blue*255)
-	blueHotSlider:SetPoint("TOPLEFT", greenHotSlider, "BOTTOMLEFT", 0, -26)
-	
-	local alphaHotSlider = SliderConstructor("Alpha - HoT", "Set transparency of heal bars", function(self, value) hotColor.alpha = value/100 end, true)
-	alphaHotSlider:SetMinMaxValues(0, 100)
-	alphaHotSlider:SetValueStep(1)
-	alphaHotSlider:SetObeyStepOnDrag(true)
-	alphaHotSlider:SetValue(hotColor.alpha*100)
-	alphaHotSlider:SetPoint("TOPLEFT", blueHotSlider, "BOTTOMLEFT", 0, -26)
-
-
-	self:SetScript("OnShow", nil)
-end)
-InterfaceOptions_AddCategory(options)
-
+local options = {
+	name = 'HealCommClassic Options',
+	type = 'group',
+	args = {
+		desc = {
+			order = 0,
+			type = 'description',
+			width = 'full',
+			name = 'Version '..HealCommClassic.version,
+		},
+		hotToggle = {
+			order = 1,
+			type = 'toggle',
+			name = 'Show HoTs',
+			desc = 'Include HoTs in healing prediction',
+			width = 'full',
+			get = function() return HealCommSettings.showHots end,
+			set = function(_, value) HealCommSettings.showHots = value end,
+		},
+		seperateHot = {
+			order = 2,
+			type = 'toggle',
+			name = 'Seperate HoT Color',
+			desc = 'Show HoTs as a seperate color',
+			width = 'full',
+			get = function() return HealCommSettings.seperateHots end,
+			set = function(_, value) HealCommSettings.seperateHots = value end,
+		},
+		overheal = {
+			order = 3,
+			type = 'range',
+			name = 'Extend Overheal',
+			desc = 'How far heals can extend on overhealing, in percentage of the health bar size',
+			min = 0,
+			max = 50,
+			step = 1,
+			get = function() return HealCommSettings.overhealpercent end,
+			set = function(_,value) HealCommSettings.overhealpercent = value end,
+		},
+		timeframe = {
+			order = 4,
+			type = 'range',
+			name = 'Timeframe',
+			desc = 'How many seconds into the future to predict heals',
+			min = 0,
+			max = 23,
+			step = 1,
+			get = function() return HealCommSettings.timeframe end,
+			set = function(info,value) HealCommSettings.timeframe = value end,
+		},
+		healColor = { 
+			order = 5,
+			type = 'color',
+			name = 'Color',
+			hasAlpha = true,
+			width = 'full',
+			get = function() return HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue, HealCommSettings.healColor.alpha end,
+			set = function (_, r, g, b, a) HealCommSettings.healColor.red = r; HealCommSettings.healColor.green = g; HealCommSettings.healColor.blue = b; HealCommSettings.healColor.alpha = a end,
+		},
+		hotColor = { 
+			order = 6,
+			type = 'color',
+			name = 'HoT Color',
+			hasAlpha = true,
+			width = 'full',
+			get = function() return HealCommSettings.hotColor.red, HealCommSettings.hotColor.green, HealCommSettings.hotColor.blue, HealCommSettings.hotColor.alpha end,
+			set = function (_,r, g, b, a) HealCommSettings.hotColor.red = r; HealCommSettings.hotColor.green = g; HealCommSettings.hotColor.blue = b; HealCommSettings.hotColor.alpha = a end,
+		},
+	}
+}
+LibStub("AceConfig-3.0"):RegisterOptionsTable("HealCommClassicOptions", options)
+LibStub("AceConfigDialog-3.0"):AddToBlizOptions("HealCommClassicOptions","HealCommClassic")
 
 --[[End of "Config: Main Options Tab" code section]]--
 
