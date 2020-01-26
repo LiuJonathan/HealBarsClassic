@@ -604,6 +604,8 @@ end
 	Code section: Config: Main Options Tab
 	Purpose: Add and attach options page
 ]]--
+
+HCCProfileIndex = 1 --currently selected profile index for profile specific settings
 local options = {
 	name = 'HealCommClassic Options',
 	type = 'group',
@@ -614,8 +616,26 @@ local options = {
 			width = 'full',
 			name = 'Version '..HealCommClassic.version,
 		},
+		profile = {
+			order = 2,
+			type = 'select',
+			name = 'Raid profile',
+			values = function() 
+						local profileTable = {'General'}
+						for i=1, GetNumRaidProfiles() do
+							table.insert(profileTable,GetRaidProfileName(i))
+						end
+					return profileTable end,
+			get = function() return HCCProfileIndex end,
+			set = function(_,value) HCCProfileIndex = value end 
+		},
+		header = {
+			order = 3,
+			type = 'header',
+			name = '',
+		},
 		hotToggle = {
-			order = 1,
+			order = 4,
 			type = 'toggle',
 			name = 'Show HoTs',
 			desc = 'Include HoTs in healing prediction',
@@ -624,7 +644,7 @@ local options = {
 			set = function(_, value) HealCommSettings.showHots = value end,
 		},
 		seperateHot = {
-			order = 2,
+			order = 6,
 			type = 'toggle',
 			name = 'Seperate HoT Color',
 			desc = 'Show HoTs as a seperate color',
@@ -633,7 +653,7 @@ local options = {
 			set = function(_, value) HealCommSettings.seperateHots = value end,
 		},
 		overheal = {
-			order = 3,
+			order = 8,
 			type = 'range',
 			name = 'Extend Overheal',
 			desc = 'How far heals can extend on overhealing, in percentage of the health bar size',
@@ -644,7 +664,7 @@ local options = {
 			set = function(_,value) HealCommSettings.overhealpercent = value end,
 		},
 		timeframe = {
-			order = 4,
+			order = 10,
 			type = 'range',
 			name = 'Timeframe',
 			desc = 'How many seconds into the future to predict heals',
@@ -655,7 +675,7 @@ local options = {
 			set = function(info,value) HealCommSettings.timeframe = value end,
 		},
 		healColor = { 
-			order = 5,
+			order = 12,
 			type = 'color',
 			name = 'Color',
 			hasAlpha = true,
@@ -664,7 +684,7 @@ local options = {
 			set = function (_, r, g, b, a) HealCommSettings.healColor.red = r; HealCommSettings.healColor.green = g; HealCommSettings.healColor.blue = b; HealCommSettings.healColor.alpha = a end,
 		},
 		hotColor = { 
-			order = 6,
+			order = 14,
 			type = 'color',
 			name = 'HoT Color',
 			hasAlpha = true,
@@ -672,10 +692,10 @@ local options = {
 			get = function() return HealCommSettings.hotColor.red, HealCommSettings.hotColor.green, HealCommSettings.hotColor.blue, HealCommSettings.hotColor.alpha end,
 			set = function (_,r, g, b, a) HealCommSettings.hotColor.red = r; HealCommSettings.hotColor.green = g; HealCommSettings.hotColor.blue = b; HealCommSettings.hotColor.alpha = a end,
 		},
-	}
+	},
 }
-LibStub("AceConfig-3.0"):RegisterOptionsTable("HealCommClassicOptions", options)
-LibStub("AceConfigDialog-3.0"):AddToBlizOptions("HealCommClassicOptions","HealCommClassic")
+LibStub("AceConfig-3.0"):RegisterOptionsTable("HCCOptions", options)
+LibStub("AceConfigDialog-3.0"):AddToBlizOptions("HCCOptions","HealCommClassic")
 
 --[[End of "Config: Main Options Tab" code section]]--
 
