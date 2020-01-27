@@ -1,7 +1,7 @@
 ## Interface: 11303
 ## Title: HealComm
 ## SavedVariables: HealCommSettings
-## SavedVariablesPerCharacter: HealCommProfileSettings
+## SavedVariablesPerCharacter: HCCSettings
 ## OptionalDeps: LibHealComm-4.0, Blizzard_RaidUI, Blizzard_CompactRaidFrames
 
 #@no-lib-strip@
