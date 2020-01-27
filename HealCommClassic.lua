@@ -276,7 +276,7 @@ function CompactUnitFrame_UpdateStatusTextNew(frame)
 			frame.statusText:SetTextColor(0.5, 0.5, 0.5)
 		end
 
-		if (healthLost == 0) then
+		if (healthLost == 0 and healthDelta == 0) then
 			frame.statusText:Hide();
 		else
 			frame.statusText:SetFormattedText("%d", healthDelta);
