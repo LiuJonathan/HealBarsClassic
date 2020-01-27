@@ -191,7 +191,7 @@ function HealCommClassic:OnInitialize()
 	--convert options for 1.3.0
 	if HealCommSettings then
 		general = HCCdb.profile.general
-		general.overhealPercent = HealCommSettings.overhealpercent or general.overhealPercent
+		general.overhealPercent = HealCommSettings.overhealPercent or general.overhealPercent
 		general.timeframe = HealCommSettings.timeframe or general.timeframe
 		general.showHots = HealCommSettings.showHots or general.showHots
 		general.seperateHots = HealCommSettings.seperateHots or general.seperateHots
@@ -578,11 +578,11 @@ function HealCommClassic:UpdateFrame(frame, unit, amount, hotAmount)
 
 	CompactUnitFrame_UpdateStatusText(parent)
 
-	if( amount and amount > 0 and (health < maxHealth or HCCdb.profile.general.overhealpercent > 0 )) and frame:IsVisible() then
+	if( amount and amount > 0 and (health < maxHealth or HCCdb.profile.general.overhealPercent > 0 )) and frame:IsVisible() then
 		hpBars[frame]:Show()
 		incWidth = frame:GetWidth() * (amount / maxHealth)
-		if (healthWidth + incWidth) > (frame:GetWidth() * (1+(HCCdb.profile.general.overhealpercent/100)) ) then
-			incWidth = frame:GetWidth() * (1+(HCCdb.profile.general.overhealpercent/100)) - healthWidth
+		if (healthWidth + incWidth) > (frame:GetWidth() * (1+(HCCdb.profile.general.overhealPercent/100)) ) then
+			incWidth = frame:GetWidth() * (1+(HCCdb.profile.general.overhealPercent/100)) - healthWidth
 		end
 		hpBars[frame]:SetWidth(incWidth)
 		hpBars[frame]:SetHeight(frame:GetHeight())
@@ -592,11 +592,11 @@ function HealCommClassic:UpdateFrame(frame, unit, amount, hotAmount)
 		hpBars[frame]:Hide()
 	end
 
-	if( hotAmount and hotAmount > 0 and (health < maxHealth or HCCdb.profile.general.overhealpercent > 0 )) and frame:IsVisible() then
+	if( hotAmount and hotAmount > 0 and (health < maxHealth or HCCdb.profile.general.overhealPercent > 0 )) and frame:IsVisible() then
 		hotBars[frame]:Show()
 		local hotWidth = frame:GetWidth() * (hotAmount / maxHealth)
-		if (healthWidth + hotWidth + incWidth) > (frame:GetWidth() * (1+(HCCdb.profile.general.overhealpercent/100)) ) then -- can be compressed with better math
-			hotWidth = frame:GetWidth() * (1+(HCCdb.profile.general.overhealpercent/100)) - healthWidth - incWidth
+		if (healthWidth + hotWidth + incWidth) > (frame:GetWidth() * (1+(HCCdb.profile.general.overhealPercent/100)) ) then -- can be compressed with better math
+			hotWidth = frame:GetWidth() * (1+(HCCdb.profile.general.overhealPercent/100)) - healthWidth - incWidth
 		end
 		hotBars[frame]:SetWidth(hotWidth)
 		hotBars[frame]:SetHeight(frame:GetHeight())
@@ -669,8 +669,8 @@ function HealCommClassic:CreateConfigs()
 				min = 0,
 				max = 50,
 				step = 1,
-				get = function() return HCCdb.profile.general.overhealpercent end,
-				set = function(_,value) HCCdb.profile.general.overhealpercent = value end,
+				get = function() return HCCdb.profile.general.overhealPercent end,
+				set = function(_,value) HCCdb.profile.general.overhealPercent = value end,
 			},
 			timeframe = {
 				order = 10,
