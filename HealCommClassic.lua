@@ -7,8 +7,8 @@
 		- CompactUnitFrame_UpdateHealthHook
 		- CompactUnitFrame_UpdateMaxHealthHook
 		- CompactUnitFrame_SetUnitHook
+		- CompactUnitFrame_UpdateStatusTextHook
 		- OnInitialize
-		- CompactUnitFrame_UpdateStatusTextNew
 		- CreateBars
 		- UpdateBars
 		- UNIT_PET
@@ -20,7 +20,7 @@
 		- HealComm_GUIDDisappeared
 		- UpdateIncoming
 		- UpdateFrame
-		- *Options menu
+		- CreateConfigs
 		- *Event registration
 --]]
 
@@ -56,11 +56,11 @@ local partyGUIDs = {
 local currentHeals = {}
 local currentHots ={}
 
-local HCCDefault = {
+local HCCdefault = {
 	profile = {
 		general = {
 			overhealPercent = 20,
-			timeframe = 3,
+			timeframe = 6,
 			showHots = true,
 			seperateHots = true,
 			healColor = {0, 1, 50/255, 1},
@@ -70,7 +70,7 @@ local HCCDefault = {
 	}
 }
 
-local HCCdb = LibStub("AceDB-3.0"):New("HealCommSettings", HCCDefault)
+local HCCdb = {}
 
 --[[
 	Function: RaidPulloutButton_OnLoadHook
@@ -183,53 +183,16 @@ hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This
 
 
 --[[
-	Function: OnInitialize
-	Purpose: Initalize necessary functions, variables and set hooks, callbacks
-]]--
-function HealCommClassic:OnInitialize()
-	
-	--convert options for 1.3.0
-	if HealCommSettings then
-		general = HCCdb.profile.general
-		general.overhealPercent = HealCommSettings.overhealPercent or general.overhealPercent
-		general.timeframe = HealCommSettings.timeframe or general.timeframe
-		general.showHots = HealCommSettings.showHots or general.showHots
-		general.seperateHots = HealCommSettings.seperateHots or general.seperateHots
-		if HealCommSettings.healColor then
-			general.healColor = {HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue, HealCommSettings.healColor.alpha or general.healColor[4]}
-		end
-		if HealCommSettings.hotColor then
-			general.hotColor = {HealCommSettings.hotColor.red, HealCommSettings.hotColor.green, HealCommSettings.hotColor.blue, HealCommSettings.hotColor.alpha or general.hotColor[4]}
-		end
-		general.statusText = HealCommSettings.statusText or general.statusText
-	end
-	
-	healColor=HCCdb.profile.general.healColor 
-	hotColor=HCCdb.profile.general.hotColor
-	
-
-	self:CreateBars()
-	self:CreateConfigs()
-	hooksecurefunc("RaidPulloutButton_OnLoad", RaidPulloutButton_OnLoadHook)
-	hooksecurefunc("UnitFrameHealthBar_OnValueChanged", UnitFrameHealthBar_OnValueChangedHook)
-	hooksecurefunc("CompactUnitFrame_UpdateHealth", CompactUnitFrame_UpdateHealthHook)
-	hooksecurefunc("CompactUnitFrame_UpdateMaxHealth", CompactUnitFrame_UpdateMaxHealthHook)
-	CompactUnitFrame_UpdateStatusTextOld = CompactUnitFrame_UpdateStatusText
-	CompactUnitFrame_UpdateStatusText = CompactUnitFrame_UpdateStatusTextNew
-	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealStarted", "HealComm_HealUpdated")
-	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealStopped")
-	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealDelayed", "HealComm_HealUpdated")
-	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealUpdated")
-	libCHC.RegisterCallback(HealCommClassic, "HealComm_ModifierChanged")
-	libCHC.RegisterCallback(HealCommClassic, "HealComm_GUIDDisappeared")
-end
-
---[[
-	Function: CompactUnitFrame_UpdateStatusTextNew
+	Function: CompactUnitFrame_UpdateStatusTextHook
 	Purpose: Handle status text features
 --]]
-function CompactUnitFrame_UpdateStatusTextNew(frame)
-
+function CompactUnitFrame_UpdateStatusTextHook(frame)
+	if (not frame.statusText) then return end
+	if (UnitIsFeignDeath(frame.displayedUnit)) then
+		frame.statusText:SetText('FEIGN')
+	end
+		
+	--[[
 	if ( not frame.statusText ) then
 		return;
 	end
@@ -288,7 +251,50 @@ function CompactUnitFrame_UpdateStatusTextNew(frame)
 		frame.statusText:Show();
 	else
 		frame.statusText:Hide();
+	end 
+	--]]
+end
+
+--[[
+	Function: OnInitialize
+	Purpose: Initalize necessary functions, variables and set hooks, callbacks
+]]--
+function HealCommClassic:OnInitialize()
+
+	--convert options from earlier than 1.2.4
+	if HealCommSettings and HealCommSettings.timeframe then
+		general = HCCdefault.profile.general
+		general.overhealPercent = HealCommSettings.overhealPercent or general.overhealPercent
+		general.timeframe = HealCommSettings.timeframe or general.timeframe
+		general.showHots = HealCommSettings.showHots or general.showHots
+		general.seperateHots = HealCommSettings.seperateHots or general.seperateHots
+		if HealCommSettings.healColor then
+			general.healColor = {HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue, HealCommSettings.healColor.alpha or general.healColor[4]}
+		end
+		if HealCommSettings.hotColor then
+			general.hotColor = {HealCommSettings.hotColor.red, HealCommSettings.hotColor.green, HealCommSettings.hotColor.blue, HealCommSettings.hotColor.alpha or general.hotColor[4]}
+		end
+		general.statusText = HealCommSettings.statusText or general.statusText
+		HealCommSettings=nil
 	end
+	HCCdb = LibStub("AceDB-3.0"):New("HealCommSettings", HCCdefault)
+	healColor=HCCdb.profile.general.healColor 
+	hotColor=HCCdb.profile.general.hotColor
+	
+
+	self:CreateBars()
+	self:CreateConfigs()
+	hooksecurefunc("RaidPulloutButton_OnLoad", RaidPulloutButton_OnLoadHook)
+	hooksecurefunc("UnitFrameHealthBar_OnValueChanged", UnitFrameHealthBar_OnValueChangedHook)
+	hooksecurefunc("CompactUnitFrame_UpdateHealth", CompactUnitFrame_UpdateHealthHook)
+	hooksecurefunc("CompactUnitFrame_UpdateMaxHealth", CompactUnitFrame_UpdateMaxHealthHook)
+	hooksecurefunc("CompactUnitFrame_UpdateStatusText", CompactUnitFrame_UpdateStatusTextHook)
+	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealStarted", "HealComm_HealUpdated")
+	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealStopped")
+	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealDelayed", "HealComm_HealUpdated")
+	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealUpdated")
+	libCHC.RegisterCallback(HealCommClassic, "HealComm_ModifierChanged")
+	libCHC.RegisterCallback(HealCommClassic, "HealComm_GUIDDisappeared")
 end
 
 
@@ -574,9 +580,6 @@ function HealCommClassic:UpdateFrame(frame, unit, amount, hotAmount)
 	local health, maxHealth= UnitHealth(unit), UnitHealthMax(unit)
 	local healthWidth=frame:GetWidth() * (health / maxHealth)
 	local incWidth=0
-	local parent = frame:GetParent();
-
-	CompactUnitFrame_UpdateStatusText(parent)
 
 	if( amount and amount > 0 and (health < maxHealth or HCCdb.profile.general.overhealPercent > 0 )) and frame:IsVisible() then
 		hpBars[frame]:Show()
