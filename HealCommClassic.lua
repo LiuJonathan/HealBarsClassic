@@ -107,7 +107,7 @@ end
 ]]--
 local function UnitFrameHealthBar_OnValueChangedHook(self)
 	HealCommClassic:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
-	CompactUnitFrame_UpdateAll(frame)
+	CompactUnitFrame_UpdateAll(self)
 end
 
 
