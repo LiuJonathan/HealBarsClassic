@@ -509,7 +509,7 @@ function HealCommClassic:UpdateIncoming(...)
 	for i=1, select("#", ...) do
 		local amount, hotAmount
 		targetGUID = select(i, ...)
-		amount = (libCHC:GetHealAmount(targetGUID, healType, GetTime()+ HCCdb.profile.general.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
+		amount = (libCHC:GetHealAmount(targetGUID, healType, nil) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
 		if HCCdb.profile.general.seperateHots and HCCdb.profile.general.showHots then
 			hotAmount= (libCHC:GetHealAmount(targetGUID, hotType, GetTime()+HCCdb.profile.general.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
 		end
