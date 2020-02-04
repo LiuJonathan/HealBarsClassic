@@ -107,6 +107,7 @@ end
 ]]--
 local function UnitFrameHealthBar_OnValueChangedHook(self)
 	HealCommClassic:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
+	CompactUnitFrame_UpdateAll(frame)
 end
 
 
@@ -180,7 +181,6 @@ local function CompactUnitFrame_SetUnitHook(self, unit)
 	end
 end
 hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This needs early hooking
-
 
 --[[
 	Function: CompactUnitFrame_UpdateStatusTextHook
@@ -600,6 +600,9 @@ function HealCommClassic:UpdateFrame(frame, unit, amount, hotAmount)
 		local hotWidth = frame:GetWidth() * (hotAmount / maxHealth)
 		if (healthWidth + hotWidth + incWidth) > (frame:GetWidth() * (1+(HCCdb.profile.general.overhealPercent/100)) ) then -- can be compressed with better math
 			hotWidth = frame:GetWidth() * (1+(HCCdb.profile.general.overhealPercent/100)) - healthWidth - incWidth
+			if hotWidth < 0 then
+				hotBars[frame]:Hide()
+			end
 		end
 		hotBars[frame]:SetWidth(hotWidth)
 		hotBars[frame]:SetHeight(frame:GetHeight())
