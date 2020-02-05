@@ -57,16 +57,15 @@ local currentHeals = {}
 local currentHots ={}
 
 local HCCdefault = {
-	profile = {
-		general = {
-			overhealPercent = 20,
-			timeframe = 6,
-			showHots = true,
-			seperateHots = true,
-			healColor = {0, 1, 50/255, 1},
-			hotColor = {120/255, 210/255, 65/255, 0.7},
-			statusText = false
-		}
+	global = {
+		overhealPercent = 20,
+		timeframe = 6,
+		showHots = true,
+		seperateHots = true,
+		healColor = {0, 1, 50/255, 1},
+		hotColor = {120/255, 210/255, 65/255, 0.7},
+		feignIndicator = true,
+		predictiveHealthLost = false
 	}
 }
 
@@ -86,7 +85,7 @@ local function RaidPulloutButton_OnLoadHook(self)
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetMinMaxValues(0, 1)
 		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetValue(1)
-		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetStatusBarColor(unpack(HCCdb.profile.general.healColor))
+		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetStatusBarColor(unpack(HCCdb.global.healColor))
 	end
 	if not hotBars[self] then
 		hotBars[getglobal(self:GetParent():GetName().."HealthBar")] = CreateFrame("StatusBar", self:GetName().."HotBarIncHeal" , self)
@@ -95,7 +94,7 @@ local function RaidPulloutButton_OnLoadHook(self)
 		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
 		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetMinMaxValues(0, 1)
 		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetValue(1)
-		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetStatusBarColor(unpack(HCCdb.profile.general.hotColor))
+		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetStatusBarColor(unpack(HCCdb.global.hotColor))
 	end
 end
 
@@ -168,7 +167,7 @@ local function CompactUnitFrame_SetUnitHook(self, unit)
 		hpBars[self.healthBar]:SetStatusBarTexture("Interface\\RaidFrame\\Raid-Bar-Hp-Fill")
 		hpBars[self.healthBar]:SetMinMaxValues(0, 1)
 		hpBars[self.healthBar]:SetValue(1)
-		hpBars[self.healthBar]:SetStatusBarColor(unpack(HCCdb.profile.general.healColor))
+		hpBars[self.healthBar]:SetStatusBarColor(unpack(HCCdb.global.healColor))
 	end
 	if not hotBars[self.healthBar] then
 		hotBars[self.healthBar] = CreateFrame("StatusBar", nil, self)
@@ -177,7 +176,7 @@ local function CompactUnitFrame_SetUnitHook(self, unit)
 		hotBars[self.healthBar]:SetStatusBarTexture("Interface\\RaidFrame\\Raid-Bar-Hp-Fill")
 		hotBars[self.healthBar]:SetMinMaxValues(0, 1)
 		hotBars[self.healthBar]:SetValue(1)
-		hotBars[self.healthBar]:SetStatusBarColor(unpack(HCCdb.profile.general.hotColor))
+		hotBars[self.healthBar]:SetStatusBarColor(unpack(HCCdb.global.hotColor))
 	end
 end
 hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This needs early hooking
@@ -263,23 +262,25 @@ function HealCommClassic:OnInitialize()
 
 	--convert options from earlier than 1.2.4
 	if HealCommSettings and HealCommSettings.timeframe then
-		general = HCCdefault.profile.general
-		general.overhealPercent = HealCommSettings.overhealPercent or general.overhealPercent
-		general.timeframe = HealCommSettings.timeframe or general.timeframe
-		general.showHots = HealCommSettings.showHots or general.showHots
-		general.seperateHots = HealCommSettings.seperateHots or general.seperateHots
+		settings = HCCdefault.global
+		settings.overhealPercent = HealCommSettings.overhealPercent or settings.overhealPercent
+		settings.timeframe = HealCommSettings.timeframe or settings.timeframe
+		settings.showHots = HealCommSettings.showHots or settings.showHots
+		settings.seperateHots = HealCommSettings.seperateHots or settings.seperateHots
+		settings.feignIndicator = settings.feignIndicator
+		settings.predictiveHealthLost = settings.predictiveHealthLost
 		if HealCommSettings.healColor then
-			general.healColor = {HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue, HealCommSettings.healColor.alpha or general.healColor[4]}
+			settings.healColor = {HealCommSettings.healColor.red, HealCommSettings.healColor.green, HealCommSettings.healColor.blue, HealCommSettings.healColor.alpha or settings.healColor[4]}
 		end
 		if HealCommSettings.hotColor then
-			general.hotColor = {HealCommSettings.hotColor.red, HealCommSettings.hotColor.green, HealCommSettings.hotColor.blue, HealCommSettings.hotColor.alpha or general.hotColor[4]}
+			settings.hotColor = {HealCommSettings.hotColor.red, HealCommSettings.hotColor.green, HealCommSettings.hotColor.blue, HealCommSettings.hotColor.alpha or settings.hotColor[4]}
 		end
-		general.statusText = HealCommSettings.statusText or general.statusText
+		settings.statusText = HealCommSettings.statusText or settings.statusText
 		HealCommSettings=nil
 	end
 	HCCdb = LibStub("AceDB-3.0"):New("HealCommSettings", HCCdefault)
-	healColor=HCCdb.profile.general.healColor 
-	hotColor=HCCdb.profile.general.hotColor
+	healColor=HCCdb.global.healColor 
+	hotColor=HCCdb.global.hotColor
 	
 
 	self:CreateBars()
@@ -311,7 +312,7 @@ function HealCommClassic:CreateBars()
 			hpBars[v.bar]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
 			hpBars[v.bar]:SetMinMaxValues(0, 1)
 			hpBars[v.bar]:SetValue(1)
-			hpBars[v.bar]:SetStatusBarColor(unpack(HCCdb.profile.general.healColor))
+			hpBars[v.bar]:SetStatusBarColor(unpack(HCCdb.global.healColor))
 		end
 		if not hotBars[v] then
 			hotBars[v.bar] = CreateFrame("StatusBar", "IncHotBar"..unit, v.frame)
@@ -320,7 +321,7 @@ function HealCommClassic:CreateBars()
 			hotBars[v.bar]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
 			hotBars[v.bar]:SetMinMaxValues(0, 1)
 			hotBars[v.bar]:SetValue(1)
-			hotBars[v.bar]:SetStatusBarColor(unpack(HCCdb.profile.general.hotColor))
+			hotBars[v.bar]:SetStatusBarColor(unpack(HCCdb.global.hotColor))
 		end
 	end
 end
@@ -333,12 +334,12 @@ end
 function HealCommClassic:UpdateBars()
 	for unit,v in pairs(hpBars) do
 		if hpBars[unit] then
-			HCCdb.profile.general.healColor=healColor
-			hpBars[unit]:SetStatusBarColor(unpack(HCCdb.profile.general.healColor))
+			HCCdb.global.healColor=healColor
+			hpBars[unit]:SetStatusBarColor(unpack(HCCdb.global.healColor))
 		end
 		if hotBars[unit] then
-			HCCdb.profile.general.hotColor=hotColor
-			hotBars[unit]:SetStatusBarColor(unpack(HCCdb.profile.general.hotColor))
+			HCCdb.global.hotColor=hotColor
+			hotBars[unit]:SetStatusBarColor(unpack(HCCdb.global.hotColor))
 		end
 	end
 end
@@ -501,7 +502,7 @@ end
 function HealCommClassic:UpdateIncoming(...)
 	local targetGUID, num, frame, unitframe, healType
 	local hotType=libCHC.HOT_HEALS
-	if HCCdb.profile.general.showHots and not HCCdb.profile.general.seperateHots then
+	if HCCdb.global.showHots and not HCCdb.global.seperateHots then
 		healType = libCHC.ALL_HEALS
 	else
 		healType = libCHC.CASTED_HEALS
@@ -510,8 +511,8 @@ function HealCommClassic:UpdateIncoming(...)
 		local amount, hotAmount
 		targetGUID = select(i, ...)
 		amount = (libCHC:GetHealAmount(targetGUID, healType, nil) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
-		if HCCdb.profile.general.seperateHots and HCCdb.profile.general.showHots then
-			hotAmount= (libCHC:GetHealAmount(targetGUID, hotType, GetTime()+HCCdb.profile.general.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
+		if HCCdb.global.seperateHots and HCCdb.global.showHots then
+			hotAmount= (libCHC:GetHealAmount(targetGUID, hotType, GetTime()+HCCdb.global.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
 		end
 		currentHots[targetGUID] = hotAmount 
 		currentHeals[targetGUID] = amount 
@@ -581,11 +582,11 @@ function HealCommClassic:UpdateFrame(frame, unit, amount, hotAmount)
 	local healthWidth=frame:GetWidth() * (health / maxHealth)
 	local incWidth=0
 
-	if( amount and amount > 0 and (health < maxHealth or HCCdb.profile.general.overhealPercent > 0 )) and frame:IsVisible() then
+	if( amount and amount > 0 and (health < maxHealth or HCCdb.global.overhealPercent > 0 )) and frame:IsVisible() then
 		hpBars[frame]:Show()
 		incWidth = frame:GetWidth() * (amount / maxHealth)
-		if (healthWidth + incWidth) > (frame:GetWidth() * (1+(HCCdb.profile.general.overhealPercent/100)) ) then
-			incWidth = frame:GetWidth() * (1+(HCCdb.profile.general.overhealPercent/100)) - healthWidth
+		if (healthWidth + incWidth) > (frame:GetWidth() * (1+(HCCdb.global.overhealPercent/100)) ) then
+			incWidth = frame:GetWidth() * (1+(HCCdb.global.overhealPercent/100)) - healthWidth
 		end
 		hpBars[frame]:SetWidth(incWidth)
 		hpBars[frame]:SetHeight(frame:GetHeight())
@@ -595,11 +596,11 @@ function HealCommClassic:UpdateFrame(frame, unit, amount, hotAmount)
 		hpBars[frame]:Hide()
 	end
 
-	if( hotAmount and hotAmount > 0 and (health < maxHealth or HCCdb.profile.general.overhealPercent > 0 )) and frame:IsVisible() then
+	if( hotAmount and hotAmount > 0 and (health < maxHealth or HCCdb.global.overhealPercent > 0 )) and frame:IsVisible() then
 		hotBars[frame]:Show()
 		local hotWidth = frame:GetWidth() * (hotAmount / maxHealth)
-		if (healthWidth + hotWidth + incWidth) > (frame:GetWidth() * (1+(HCCdb.profile.general.overhealPercent/100)) ) then -- can be compressed with better math
-			hotWidth = frame:GetWidth() * (1+(HCCdb.profile.general.overhealPercent/100)) - healthWidth - incWidth
+		if (healthWidth + hotWidth + incWidth) > (frame:GetWidth() * (1+(HCCdb.global.overhealPercent/100)) ) then -- can be compressed with better math
+			hotWidth = frame:GetWidth() * (1+(HCCdb.global.overhealPercent/100)) - healthWidth - incWidth
 		end
 		if hotWidth < 0 then
 			hotBars[frame]:Hide()
@@ -619,16 +620,21 @@ end
 	Purpose: Create and attach options page
 ]]--
 function HealCommClassic:CreateConfigs()
-	HCCSelectedProfile = 1 --currently selected profile index for profile specific settings
 	local options = {
 		name = 'HealCommClassic Options',
 		type = 'group',
 		args = {
-			desc = {
+			desc1 = {
 				order = 0,
 				type = 'description',
 				width = 'full',
 				name = 'Version '..HealCommClassic.version,
+			},
+			desc2 = {
+				order = 2,
+				type = 'description',
+				width = 'full',
+				name = 'HealCommClassic is an implementation of HealComm (known as LibHealComm) for Blizzards raid frames'
 			},
 		},
 	}
@@ -636,27 +642,14 @@ function HealCommClassic:CreateConfigs()
 		name = 'General Settings',
 		type = 'group',
 		args = {
-			profile = {
-				order = 2,
-				type = 'select',
-				name = 'Raid profile',
-				values = function() 
-							local profileTable = {'General'}
-							for i=1, GetNumRaidProfiles() do
-								table.insert(profileTable,GetRaidProfileName(i))
-							end
-						return profileTable end,
-				get = function() return HCCSelectedProfile end,
-				set = function(_,value) HCCSelectedProfile = value end,
-			},
 			hotToggle = {
 				order = 4,
 				type = 'toggle',
 				name = 'Show HoTs',
 				desc = 'Include HoTs in healing prediction',
 				width = 'full',
-				get = function() return HCCdb.profile.general.showHots end,
-				set = function(_, value) HCCdb.profile.general.showHots = value end,
+				get = function() return HCCdb.global.showHots end,
+				set = function(_, value) HCCdb.global.showHots = value end,
 			},
 			seperateHot = {
 				order = 6,
@@ -664,8 +657,8 @@ function HealCommClassic:CreateConfigs()
 				name = 'Seperate HoT Color',
 				desc = 'Show HoTs as a seperate color',
 				width = 'full',
-				get = function() return HCCdb.profile.general.seperateHots end,
-				set = function(_, value) HCCdb.profile.general.seperateHots = value end,
+				get = function() return HCCdb.global.seperateHots end,
+				set = function(_, value) HCCdb.global.seperateHots = value end,
 			},
 			overheal = {
 				order = 8,
@@ -675,8 +668,8 @@ function HealCommClassic:CreateConfigs()
 				min = 0,
 				max = 50,
 				step = 1,
-				get = function() return HCCdb.profile.general.overhealPercent end,
-				set = function(_,value) HCCdb.profile.general.overhealPercent = value end,
+				get = function() return HCCdb.global.overhealPercent / 100 end,
+				set = function(_,value) HCCdb.global.overhealPercent = value * 100 end,
 			},
 			timeframe = {
 				order = 10,
@@ -686,8 +679,8 @@ function HealCommClassic:CreateConfigs()
 				min = 0,
 				max = 23,
 				step = 1,
-				get = function() return HCCdb.profile.general.timeframe end,
-				set = function(info,value) HCCdb.profile.general.timeframe = value end,
+				get = function() return HCCdb.global.timeframe end,
+				set = function(info,value) HCCdb.global.timeframe = value end,
 			},
 			healColor = { 
 				order = 12,
@@ -695,8 +688,8 @@ function HealCommClassic:CreateConfigs()
 				name = 'Color',
 				hasAlpha = true,
 				width = 'full',
-				get = function() return unpack(HCCdb.profile.general.healColor) end,
-				set = function (_, r, g, b, a) HCCdb.profile.general.healColor = {r,g,b,a} end,
+				get = function() return unpack(HCCdb.global.healColor) end,
+				set = function (_, r, g, b, a) HCCdb.global.healColor = {r,g,b,a} end,
 			},
 			hotColor = { 
 				order = 14,
