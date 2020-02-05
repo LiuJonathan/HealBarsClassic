@@ -186,49 +186,20 @@ hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This
 	Purpose: Handle status text features
 --]]
 function CompactUnitFrame_UpdateStatusTextHook(frame)
-	if (not frame.statusText) then return end
-	if (UnitIsFeignDeath(frame.displayedUnit)) then
+	if (not frame.statusText or not frame.optionTable.displayStatusText or not UnitIsConnected(frame.unit) or UnitIsDeadOrGhost(frame.displayedUnit)) then return end
+	
+	if (UnitIsFeignDeath(frame.displayedUnit) and HCCdb.global.feignIndicator) then
 		frame.statusText:SetText('FEIGN')
 	end
-		
-	--[[
-	if ( not frame.statusText ) then
-		return;
-	end
-	if ( not frame.optionTable.displayStatusText ) then
-		frame.statusText:Hide();
-		return;
-	end
 
-	local currentHeals = currentHeals[UnitGUID(frame.displayedUnit)] or 0
-	local currentHots = currentHots[UnitGUID(frame.displayedUnit)] or 0
-
-	if ( not UnitIsConnected(frame.unit) ) then
-		frame.statusText:SetTextColor(0.5, 0.5, 0.5)
-		frame.statusText:SetText(PLAYER_OFFLINE)
-		frame.statusText:Show();
-	elseif ( UnitIsDeadOrGhost(frame.displayedUnit) ) then
-		frame.statusText:SetTextColor(0.5, 0.5, 0.5)
-		frame.statusText:SetText(DEAD);
-		frame.statusText:Show();
-	elseif ( frame.optionTable.healthText == "losthealth" or HCCdb.profile.general.statusText ) then
+	if ( frame.optionTable.healthText == "losthealth" and HCCdb.global.statusText ) then
+		local currentHeals = currentHeals[UnitGUID(frame.displayedUnit)] or 0
+		local currentHots = currentHots[UnitGUID(frame.displayedUnit)] or 0
 		local healthLost = UnitHealthMax(frame.displayedUnit) - UnitHealth(frame.displayedUnit)
 		local healthDelta = (currentHeals + currentHots) - healthLost
-		-- Default behavior with option turned off
-		if (not HCCdb.profile.general.statusText) then
-			if ( healthLost > 0 ) then
-				frame.statusText:SetTextColor(0.5, 0.5, 0.5)
-				frame.statusText:SetFormattedText(LOST_HEALTH, healthLost);
-				frame.statusText:Show();
-			else
-				frame.statusText:Hide();
-			end			
-			return
-		end
 
-		-- New behavior with option turned on
 		if (healthDelta > 0) then
-			frame.statusText:SetTextColor(unpack(HCCdb.profile.general.healColor))
+			frame.statusText:SetTextColor(unpack(HCCdb.global.healColor))
 		else
 			frame.statusText:SetTextColor(0.5, 0.5, 0.5)
 		end
@@ -239,19 +210,7 @@ function CompactUnitFrame_UpdateStatusTextHook(frame)
 			frame.statusText:SetFormattedText("%d", healthDelta);
 			frame.statusText:Show();
 		end
-	elseif ( frame.optionTable.healthText == "health" ) then
-		frame.statusText:SetTextColor(0.5, 0.5, 0.5)
-		frame.statusText:SetText(UnitHealth(frame.displayedUnit));
-		frame.statusText:Show();
-	elseif ( (frame.optionTable.healthText == "perc") and (UnitHealthMax(frame.displayedUnit) > 0) ) then
-		frame.statusText:SetTextColor(0.5, 0.5, 0.5)
-		local perc = math.ceil(100 * (UnitHealth(frame.displayedUnit)/UnitHealthMax(frame.displayedUnit)));
-		frame.statusText:SetFormattedText("%d%%", perc);
-		frame.statusText:Show();
-	else
-		frame.statusText:Hide();
 	end 
-	--]]
 end
 
 --[[
@@ -697,12 +656,53 @@ function HealCommClassic:CreateConfigs()
 				name = 'HoT Color',
 				hasAlpha = true,
 				width = 'full',
-				get = function() return unpack(HCCdb.profile.general.hotColor) end,
-				set = function (_,r, g, b, a) HCCdb.profile.general.hotColor = {r,g,b,a} end,
+				get = function() return unpack(HCCdb.global.hotColor) end,
+				set = function (_,r, g, b, a) HCCdb.global.hotColor = {r,g,b,a} end,
 			},
 		},
 	}
-	options.args.profiles = LibStub("AceDBOptions-3.0"):GetOptionsTable(HCCdb)
+	options.args['statusText'] = {
+		name = 'Status Text',
+		type = 'group',
+		args = {
+			feignToggle = {
+				order = 2,
+				type = 'toggle',
+				name = 'Feign death indicator',
+				descStyle = 'inline',
+				desc = 'Shows the text FEIGN instead of DEAD when a hunter feigns death',
+				width = 'full',
+				get = function() return HCCdb.global.feignIndicator end,
+				set = function(_, value) HCCdb,global.feignIndicator = value end,
+			},
+			desc1 = {
+				order = 4,
+				type = 'header',
+				name = 'Health Text Replacers',
+			},
+			desc2 = {
+				order = 6,
+				type = 'description',
+				name = 'These options replace the functionality of \'Display Health Text\' in Blizzard\'s Raid Profiles',
+			},
+			predictiveHealthLostToggle = {
+				order = 8,
+				type = 'toggle',
+				name = 'Predictive Health Lost',
+				desc = 'Show amount of health missing after all shown heals go off. This replaces the \'Health Lost\' option.',
+				descStyle = 'inline',
+				width = 'full',
+				get = function() return HCCdb.global.predictiveHealthLost end,
+				set = function(_, value) HCCdb.global.predictiveHealthLost = value end,
+			},
+			continued = {
+				order = 20,
+				type = 'description',
+				name = 'More options will be added in the future',
+			}
+		},
+	}
+
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("HCCOptions", options)
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("HCCOptions","HealCommClassic")
 end
