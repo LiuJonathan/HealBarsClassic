@@ -593,7 +593,7 @@ function HealCommClassic:CreateConfigs()
 				order = 2,
 				type = 'description',
 				width = 'full',
-				name = 'HealCommClassic is an implementation of HealComm (known as LibHealComm) for Blizzards raid frames'
+				name = 'HealCommClassic is an implementation of HealComm (LibHealComm) for Blizzards raid frames'
 			},
 		},
 	}
@@ -625,8 +625,9 @@ function HealCommClassic:CreateConfigs()
 				name = 'Extend Overheal',
 				desc = 'How far heals can extend on overhealing, in percentage of the health bar size',
 				min = 0,
-				max = 50,
-				step = 1,
+				max = 0.5,
+				step = 0.01,
+				isPercent = true,
 				get = function() return HCCdb.global.overhealPercent / 100 end,
 				set = function(_,value) HCCdb.global.overhealPercent = value * 100 end,
 			},
@@ -675,6 +676,11 @@ function HealCommClassic:CreateConfigs()
 				get = function() return HCCdb.global.feignIndicator end,
 				set = function(_, value) HCCdb,global.feignIndicator = value end,
 			},
+			spacer = {
+				order = 3,
+				type = 'description',
+				name = '\n\n',
+			},
 			desc1 = {
 				order = 4,
 				type = 'header',
@@ -683,13 +689,13 @@ function HealCommClassic:CreateConfigs()
 			desc2 = {
 				order = 6,
 				type = 'description',
-				name = 'These options replace the functionality of \'Display Health Text\' in Blizzard\'s Raid Profiles',
+				name = 'These options replace the functionality of \'Display Health Text\' in Blizzard\'s Raid Profiles.\n\n',
 			},
 			predictiveHealthLostToggle = {
 				order = 8,
 				type = 'toggle',
-				name = 'Predictive Health Lost',
-				desc = 'Show amount of health missing after all shown heals go off. This replaces the \'Health Lost\' option.',
+				name = 'Predictive \'Health Lost\'',
+				desc = 'Shows the amount of health missing after all shown heals go off. \nThis replaces the \'Health Lost\' option.',
 				descStyle = 'inline',
 				width = 'full',
 				get = function() return HCCdb.global.predictiveHealthLost end,
@@ -698,7 +704,7 @@ function HealCommClassic:CreateConfigs()
 			continued = {
 				order = 20,
 				type = 'description',
-				name = 'More options will be added in the future',
+				name = '\n\nMore options will be added in the future',
 			}
 		},
 	}
