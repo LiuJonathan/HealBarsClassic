@@ -222,10 +222,14 @@ function HealCommClassic:OnInitialize()
 	--convert options from earlier than 1.2.4
 	if HealCommSettings and HealCommSettings.timeframe then
 		settings = HCCdefault.global
-		settings.overhealPercent = HealCommSettings.overhealPercent or settings.overhealPercent
+		settings.overhealPercent = HealCommSettings.overhealpercent or settings.overhealPercent
 		settings.timeframe = HealCommSettings.timeframe or settings.timeframe
-		settings.showHots = HealCommSettings.showHots or settings.showHots
-		settings.seperateHots = HealCommSettings.seperateHots or settings.seperateHots
+		if HealCommSettings.showHots then
+			settings.showHots = HealCommSettings.showHots
+		end
+		if HealCommSettings.seperateHots then
+			settings.seperateHots = HealCommSettings.seperateHots
+		end
 		settings.feignIndicator = settings.feignIndicator
 		settings.predictiveHealthLost = settings.predictiveHealthLost
 		if HealCommSettings.healColor then
