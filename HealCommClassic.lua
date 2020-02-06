@@ -30,7 +30,7 @@ local libCHC = LibStub("LibHealComm-4.0", true)
 HealCommClassic = LibStub("AceAddon-3.0"):NewAddon("HealCommClassic")
 --Remember to update version number!!
 --Curseforge release starting from 1.1.7
-HealCommClassic.version = "1.2.4"
+HealCommClassic.version = "1.3.0"
 
 local hpBars = {} --incoming castedHeals
 local hotBars={} --incoming HoTs
@@ -577,6 +577,8 @@ end
 --[[
 	Function: CreateConfigs
 	Purpose: Create and attach options page
+	Notes: 
+		For convenience, order is incremented in steps of two so new options can be squeezed between them.
 ]]--
 function HealCommClassic:CreateConfigs()
 	local options = {
@@ -597,32 +599,19 @@ function HealCommClassic:CreateConfigs()
 			},
 		},
 	}
-	options.args['general'] = {
-		name = 'General Settings',
+	options.args['healthBars'] = {
+		name = 'Health Bars',
 		type = 'group',
 		args = {
-			hotToggle = {
-				order = 4,
-				type = 'toggle',
-				name = 'Show HoTs',
-				desc = 'Include HoTs in healing prediction',
-				width = 'full',
-				get = function() return HCCdb.global.showHots end,
-				set = function(_, value) HCCdb.global.showHots = value end,
-			},
-			seperateHot = {
-				order = 6,
-				type = 'toggle',
-				name = 'Seperate HoT Color',
-				desc = 'Show HoTs as a seperate color',
-				width = 'full',
-				get = function() return HCCdb.global.seperateHots end,
-				set = function(_, value) HCCdb.global.seperateHots = value end,
+			header0 = {
+				order = 2,
+				type = 'header',
+				name = 'General Settings',
 			},
 			overheal = {
-				order = 8,
+				order = 4,
 				type = 'range',
-				name = 'Extend Overheal',
+				name = 'Extend Overheals',
 				desc = 'How far heals can extend on overhealing, in percentage of the health bar size',
 				min = 0,
 				max = 0.5,
@@ -631,28 +620,71 @@ function HealCommClassic:CreateConfigs()
 				get = function() return HCCdb.global.overhealPercent / 100 end,
 				set = function(_,value) HCCdb.global.overhealPercent = value * 100 end,
 			},
-			timeframe = {
+			spacer1 = {
+				order = 6,
+				type = 'description',
+				name = '\n',
+			},
+			header1 = {
+				order = 8,
+				type = 'header',
+				name = 'Heal Over Times'
+			},
+			hotToggle = {
 				order = 10,
+				type = 'toggle',
+				name = 'Show HoTs',
+				desc = 'Include HoTs in healing prediction',
+				width = 'full',
+				get = function() return HCCdb.global.showHots end,
+				set = function(_, value) HCCdb.global.showHots = value end,
+			},
+			timeframe = {
+				order = 12,
 				type = 'range',
 				name = 'Timeframe',
-				desc = 'How many seconds into the future to predict heals',
+				desc = 'How many seconds into the future to predict HoTs',
 				min = 0,
 				max = 23,
 				step = 1,
 				get = function() return HCCdb.global.timeframe end,
 				set = function(info,value) HCCdb.global.timeframe = value end,
 			},
+			spacer2 = {
+				order = 14,
+				type = 'description',
+				name = '\n',
+			},
+			header2 = {
+				order = 16,
+				type = 'header',
+				name = 'Color Options',
+			},
 			healColor = { 
-				order = 12,
+				order = 18,
 				type = 'color',
-				name = 'Color',
+				name = 'Heal Color',
 				hasAlpha = true,
 				width = 'full',
 				get = function() return unpack(HCCdb.global.healColor) end,
 				set = function (_, r, g, b, a) HCCdb.global.healColor = {r,g,b,a} end,
 			},
+			spacer3 = {
+				order = 20,
+				type = 'description',
+				name = '\n',
+			},
+			seperateHot = {
+				order = 22,
+				type = 'toggle',
+				name = 'Seperate HoT Color',
+				desc = 'Color HoTs as a seperate color.\n\'Show HoTs\' must be enabled.',
+				width = 'full',
+				get = function() return HCCdb.global.seperateHots end,
+				set = function(_, value) HCCdb.global.seperateHots = value end,
+			},
 			hotColor = { 
-				order = 14,
+				order = 24,
 				type = 'color',
 				name = 'HoT Color',
 				hasAlpha = true,
@@ -666,6 +698,11 @@ function HealCommClassic:CreateConfigs()
 		name = 'Status Text',
 		type = 'group',
 		args = {
+			header0 = {
+				order = 0,
+				type = 'header',
+				name = 'General Settings',
+			},
 			feignToggle = {
 				order = 2,
 				type = 'toggle',
@@ -679,7 +716,7 @@ function HealCommClassic:CreateConfigs()
 			spacer = {
 				order = 3,
 				type = 'description',
-				name = '\n\n',
+				name = '\n',
 			},
 			desc1 = {
 				order = 4,
