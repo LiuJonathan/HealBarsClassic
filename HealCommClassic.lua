@@ -192,24 +192,17 @@ function CompactUnitFrame_UpdateStatusTextHook(frame)
 		frame.statusText:SetText('FEIGN')
 	end
 
-	if ( frame.optionTable.healthText == "losthealth" and HCCdb.global.statusText ) then
+	if ( frame.optionTable.healthText == "losthealth" and HCCdb.global.predictiveHealthLost ) then
 		local currentHeals = currentHeals[UnitGUID(frame.displayedUnit)] or 0
 		local currentHots = currentHots[UnitGUID(frame.displayedUnit)] or 0
 		local healthLost = UnitHealthMax(frame.displayedUnit) - UnitHealth(frame.displayedUnit)
 		local healthDelta = (currentHeals + currentHots) - healthLost
-
-		if (healthDelta > 0) then
-			frame.statusText:SetTextColor(unpack(HCCdb.global.healColor))
-		else
-			frame.statusText:SetTextColor(0.5, 0.5, 0.5)
+		
+		if healthDelta < 0 then
+			healthDelta = 0
 		end
-
-		if (healthLost == 0) then
-			frame.statusText:Hide();
-		else
-			frame.statusText:SetFormattedText("%d", healthDelta);
-			frame.statusText:Show();
-		end
+		
+		frame.statusText:SetFormattedText("%d", healthDelta);
 	end 
 end
 
@@ -238,7 +231,7 @@ function HealCommClassic:OnInitialize()
 		if HealCommSettings.hotColor then
 			settings.hotColor = {HealCommSettings.hotColor.red, HealCommSettings.hotColor.green, HealCommSettings.hotColor.blue, HealCommSettings.hotColor.alpha or settings.hotColor[4]}
 		end
-		settings.statusText = HealCommSettings.statusText or settings.statusText
+		settings.statusText = HealCommSettings.statusText or settings.predictiveHealthLost
 		HealCommSettings=nil
 	end
 	HCCdb = LibStub("AceDB-3.0"):New("HealCommSettings", HCCdefault)
