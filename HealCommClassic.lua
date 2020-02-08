@@ -567,6 +567,7 @@ function HealCommClassic:UpdateFrame(frame, unit, amount, hotAmount)
 	else
 		hotBars[frame]:Hide()
 	end
+	CompactUnitFrame_UpdateStatusText(frame:GetParent())
 end
 
 
