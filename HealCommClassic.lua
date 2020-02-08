@@ -197,7 +197,7 @@ function CompactUnitFrame_UpdateStatusTextHook(frame)
 		local healthLost = UnitHealthMax(frame.displayedUnit) - UnitHealth(frame.displayedUnit)
 		local healthDelta = (currentHeals + currentHots) - healthLost
 		
-		if healthDelta < 0 then
+		if healthDelta > 0 then
 			healthDelta = 0
 		end
 		
@@ -655,6 +655,11 @@ function HealCommClassic:CreateConfigs()
 				order = 16,
 				type = 'header',
 				name = 'Color Options',
+			},
+			desc1 = {
+				order = 17,
+				type = 'description',
+				name = 'Note: The plus and minus slider sets transparency'
 			},
 			healColor = { 
 				order = 18,
