@@ -640,7 +640,7 @@ function HealCommClassic:CreateConfigs()
 				type = 'range',
 				name = 'Timeframe',
 				desc = 'How many seconds into the future to predict HoTs',
-				min = 0,
+				min = 1,
 				max = 23,
 				step = 1,
 				get = function() return HCCdb.global.timeframe end,
