@@ -632,8 +632,15 @@ function HealCommClassic:CreateConfigs()
 			desc1 = {
 				order = 0,
 				type = 'description',
-				width = 'full',
+				width = 2.5,
 				name = 'Version '..HealCommClassic.version,
+			},
+			button0 = {
+				order = 1,
+				type = 'execute',
+				name = 'Reset to defaults',
+				confirm = true,
+				func = function() HCCdb:ResetDB() end
 			},
 			desc2 = {
 				order = 2,
