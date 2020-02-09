@@ -10,7 +10,8 @@
 		- CompactUnitFrame_UpdateStatusTextHook
 		- OnInitialize
 		- CreateBars
-		- UpdateBars
+		- UpdateColors
+		- UpdateHealthValues
 		- UNIT_PET
 		- PLAYER_TARGET_CHANGED
 		- PLAYER_ROLES_ASSIGNED
@@ -285,17 +286,15 @@ end
 
 
 --[[
-	Function: UpdateBars
+	Function: UpdateColors
 	Purpose: Update the color of all heal bars
 ]]--
-function HealCommClassic:UpdateBars()
+function HealCommClassic:UpdateColors()
 	for unit,v in pairs(hpBars) do
 		if hpBars[unit] then
-			HCCdb.global.healColor=healColor
 			hpBars[unit]:SetStatusBarColor(unpack(HCCdb.global.healColor))
 		end
 		if hotBars[unit] then
-			HCCdb.global.hotColor=hotColor
 			hotBars[unit]:SetStatusBarColor(unpack(HCCdb.global.hotColor))
 		end
 	end
@@ -672,7 +671,7 @@ function HealCommClassic:CreateConfigs()
 				hasAlpha = true,
 				width = 'full',
 				get = function() return unpack(HCCdb.global.healColor) end,
-				set = function (_, r, g, b, a) HCCdb.global.healColor = {r,g,b,a} end,
+				set = function (_, r, g, b, a) HCCdb.global.healColor = {r,g,b,a}; self:UpdateColors() end,
 			},
 			spacer3 = {
 				order = 20,
@@ -695,7 +694,7 @@ function HealCommClassic:CreateConfigs()
 				hasAlpha = true,
 				width = 'full',
 				get = function() return unpack(HCCdb.global.hotColor) end,
-				set = function (_,r, g, b, a) HCCdb.global.hotColor = {r,g,b,a} end,
+				set = function (_,r, g, b, a) HCCdb.global.hotColor = {r,g,b,a}; self:UpdateColors() end,
 			},
 		},
 	}
