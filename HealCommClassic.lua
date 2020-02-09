@@ -308,13 +308,23 @@ end
 --]]
 function HealCommClassic:UpdateHealthValuesLoop()
 	if UnitInRaid("player") and HCCdb.global.fastUpdate then
+		unitframe = _G["CompactRaidFrame1"]
+		num = 1
+		while unitframe do
+			if unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) then
+				CompactUnitFrame_UpdateMaxHealth(unitframe.healthBar:GetParent())
+				CompactUnitFrame_UpdateHealth(unitframe.healthBar:GetParent())
+			end
+			num = num + 1
+			unitframe = _G["CompactRaidFrame"..num]
+		end
 		for k=1, NUM_RAID_PULLOUT_FRAMES do
 			frame = getglobal("RaidPullout"..k)
 			for z=1, frame.numPulloutButtons do
 				unitframe = getglobal(frame:GetName().."Button"..z)
 				if unitframe.unit and UnitExists(unitframe.unit) then
-					CompactUnitFrame_UpdateMaxHealth(unitframe.healthBar:getParent())
-					CompactUnitFrame_UpdateHealth(unitframe.healthBar:getParent())
+					CompactUnitFrame_UpdateMaxHealth(unitframe.healthBar:GetParent())
+					CompactUnitFrame_UpdateHealth(unitframe.healthBar:GetParent())
 				end
 			end
 		end
@@ -324,13 +334,13 @@ function HealCommClassic:UpdateHealthValuesLoop()
 				for k=1, 5 do
 					unitframe = _G[grpHeader.."Member"..k]
 					if unitframe and unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) then
-						CompactUnitFrame_UpdateMaxHealth(unitframe.healthBar:getParent())
-						CompactUnitFrame_UpdateHealth(unitframe.healthBar:getParent())				
+						CompactUnitFrame_UpdateMaxHealth(unitframe.healthBar:GetParent())
+						CompactUnitFrame_UpdateHealth(unitframe.healthBar:GetParent())				
 					end
 				end
 			end
 		end
-		C_Timer.After(HCCdb.global.fastUpdateDuration,self.UpdateHealthValuesLoop)
+		C_Timer.After(HCCdb.global.fastUpdateDuration,HealCommClassic.UpdateHealthValuesLoop)
 	end
 end
 
@@ -526,6 +536,7 @@ function HealCommClassic:UpdateIncoming(...)
 			while unitframe do
 				if unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) and UnitGUID(unitframe.displayedUnit) == targetGUID then
 					self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, amount, hotAmount)
+					CompactUnitFrame_UpdateStatusText(unitframe.healthBar:GetParent())
 				end
 				num = num + 1
 				unitframe = _G["CompactRaidFrame"..num]
@@ -802,7 +813,7 @@ function HealCommClassic:CreateConfigs()
 				descStyle = 'inline',
 				width = 'full',
 				get = function() return HCCdb.global.fastUpdate end,
-				set = function(_, value) HCCdb.global.fastUpdate = value; C_Timer.After(HCCdb.global.fastUpdateDuration, self.UpdateHealthValuesLoop) end,
+				set = function(_, value) HCCdb.global.fastUpdate = value; C_Timer.After(HCCdb.global.fastUpdateDuration, HealCommClassic.UpdateHealthValuesLoop) end,
 			},
 		}
 	}
