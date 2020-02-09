@@ -762,7 +762,7 @@ function HealCommClassic:CreateConfigs()
 				desc = 'Shows the text FEIGN instead of DEAD when a hunter feigns death',
 				width = 'full',
 				get = function() return HCCdb.global.feignIndicator end,
-				set = function(_, value) HCCdb,global.feignIndicator = value end,
+				set = function(_, value) HCCdb.global.feignIndicator = value end,
 			},
 			spacer = {
 				order = 3,
