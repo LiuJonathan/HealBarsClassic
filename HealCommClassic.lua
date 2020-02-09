@@ -506,6 +506,7 @@ function HealCommClassic:UpdateIncoming(...)
 					unitframe = getglobal(frame:GetName().."Button"..z)
 					if unitframe.unit and UnitExists(unitframe.unit) and UnitGUID(unitframe.unit) == targetGUID then
 						self:UpdateFrame(getglobal(unitframe:GetName().."HealthBar"), unitframe.unit, amount, hotAmount)
+						CompactUnitFrame_UpdateStatusText(unitframe.healthBar:GetParent())
 					end
 				end
 			end
@@ -516,6 +517,7 @@ function HealCommClassic:UpdateIncoming(...)
 						unitframe = _G[grpHeader.."Member"..k]
 						if unitframe and unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) and UnitGUID(unitframe.displayedUnit) == targetGUID then
 							self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, currentHeals[UnitGUID(unitframe.displayedUnit)] or 0, currentHots[UnitGUID(unitframe.displayedUnit)] or 0)
+							CompactUnitFrame_UpdateStatusText(unitframe.healthBar:GetParent())
 						end
 					end
 				end
@@ -569,7 +571,6 @@ function HealCommClassic:UpdateFrame(frame, unit, amount, hotAmount)
 	else
 		hotBars[frame]:Hide()
 	end
-	CompactUnitFrame_UpdateStatusText(frame:GetParent())
 end
 
 
