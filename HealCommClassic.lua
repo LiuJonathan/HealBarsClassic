@@ -11,7 +11,7 @@
 		- OnInitialize
 		- CreateBars
 		- UpdateColors
-		- UpdateHealthValues
+		- UpdateHealthValuesLoop
 		- UNIT_PET
 		- PLAYER_TARGET_CHANGED
 		- PLAYER_ROLES_ASSIGNED
@@ -66,7 +66,9 @@ local HCCdefault = {
 		healColor = {0, 1, 50/255, 1},
 		hotColor = {120/255, 210/255, 65/255, 0.7},
 		feignIndicator = true,
-		predictiveHealthLost = false
+		predictiveHealthLost = false,
+		fastUpdate = false,
+		fastUpdateDuration = 0.1, --10 updates per second
 	}
 }
 
@@ -214,7 +216,7 @@ end
 ]]--
 function HealCommClassic:OnInitialize()
 
-	--convert options from earlier than 1.2.4
+	--convert options from earlier than 1.3.0
 	if HealCommSettings and HealCommSettings.timeframe then
 		settings = HCCdefault.global
 		settings.overhealPercent = HealCommSettings.overhealpercent or settings.overhealPercent
@@ -300,6 +302,37 @@ function HealCommClassic:UpdateColors()
 	end
 end
 
+--[[
+	Function: UpdateHealthValuesLoop
+	Purpose: Force health and max health value update
+--]]
+function HealCommClassic:UpdateHealthValuesLoop()
+	if UnitInRaid("player") and HCCdb.global.fastUpdate then
+		for k=1, NUM_RAID_PULLOUT_FRAMES do
+			frame = getglobal("RaidPullout"..k)
+			for z=1, frame.numPulloutButtons do
+				unitframe = getglobal(frame:GetName().."Button"..z)
+				if unitframe.unit and UnitExists(unitframe.unit) then
+					CompactUnitFrame_UpdateMaxHealth(unitframe.healthBar:getParent())
+					CompactUnitFrame_UpdateHealth(unitframe.healthBar:getParent())
+				end
+			end
+		end
+		for i=1, 8 do
+			local grpHeader = "CompactRaidGroup"..i
+			if _G[grpHeader] then
+				for k=1, 5 do
+					unitframe = _G[grpHeader.."Member"..k]
+					if unitframe and unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) then
+						CompactUnitFrame_UpdateMaxHealth(unitframe.healthBar:getParent())
+						CompactUnitFrame_UpdateHealth(unitframe.healthBar:getParent())				
+					end
+				end
+			end
+		end
+		C_Timer.After(HCCdb.global.fastUpdateDuration,self.UpdateHealthValuesLoop)
+	end
+end
 
 --[[`
 	Function: UNIT_PET
@@ -601,6 +634,7 @@ function HealCommClassic:CreateConfigs()
 	options.args['healthBars'] = {
 		name = 'Health Bars',
 		type = 'group',
+		order = 0,
 		args = {
 			header0 = {
 				order = 2,
@@ -701,6 +735,7 @@ function HealCommClassic:CreateConfigs()
 	options.args['statusText'] = {
 		name = 'Status Text',
 		type = 'group',
+		order = 2,
 		args = {
 			header0 = {
 				order = 0,
@@ -748,6 +783,28 @@ function HealCommClassic:CreateConfigs()
 				name = '\n\nMore options will be added in the future',
 			}
 		},
+	}
+	options.args['misc']={
+		name = 'Miscellaneous',
+		type = 'group',
+		order = 4,
+		args = {
+			header0 = {
+				order = 0,
+				type = 'header',
+				name = 'General Settings',
+			},
+			fastUpdate = {
+				order = 2,
+				type = 'toggle',
+				name = 'Fast Raid Health Update',
+				desc = 'Forces extra health updates every second.\nMay impact framerate on low end machines.',
+				descStyle = 'inline',
+				width = 'full',
+				get = function() return HCCdb.global.fastUpdate end,
+				set = function(_, value) HCCdb.global.fastUpdate = value; C_Timer.After(HCCdb.global.fastUpdateDuration, self.UpdateHealthValuesLoop) end,
+			},
+		}
 	}
 
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("HCCOptions", options)
