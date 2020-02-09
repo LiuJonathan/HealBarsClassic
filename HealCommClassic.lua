@@ -603,10 +603,11 @@ function HealCommClassic:UpdateFrame(frame, unit, amount, hotAmount)
 		local hotWidth = frame:GetWidth() * (hotAmount / maxHealth)
 		if (healthWidth + hotWidth + incWidth) > (frame:GetWidth() * (1+(HCCdb.global.overhealPercent/100)) ) then -- can be compressed with better math
 			hotWidth = frame:GetWidth() * (1+(HCCdb.global.overhealPercent/100)) - healthWidth - incWidth
+			if hotWidth <= 0 then
+				hotBars[frame]:Hide() 
+			end
 		end
-		if hotWidth < 0 then
-			hotBars[frame]:Hide()
-		end
+		
 		hotBars[frame]:SetWidth(hotWidth)
 		hotBars[frame]:SetHeight(frame:GetHeight())
 		hotBars[frame]:ClearAllPoints()
