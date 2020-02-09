@@ -197,11 +197,13 @@ function CompactUnitFrame_UpdateStatusTextHook(frame)
 		local healthLost = UnitHealthMax(frame.displayedUnit) - UnitHealth(frame.displayedUnit)
 		local healthDelta = (currentHeals + currentHots) - healthLost
 		
-		if healthDelta > 0 then
-			healthDelta = 0
+		if healthDelta >= 0 then
+			frame.statusText:Hide()
+		else
+			frame.statusText:SetFormattedText("%d", healthDelta)
 		end
 		
-		frame.statusText:SetFormattedText("%d", healthDelta);
+		
 	end 
 end
 
