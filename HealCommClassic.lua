@@ -646,7 +646,7 @@ function HealCommClassic:CreateConfigs()
 				order = 2,
 				type = 'description',
 				width = 'full',
-				name = 'HealCommClassic is an implementation of HealComm (LibHealComm) for Blizzards raid frames'
+				name = 'HealCommClassic is an implementation of HealComm (LibHealComm) for Blizzard\'s raid frames'
 			},
 		},
 	}
@@ -696,7 +696,7 @@ function HealCommClassic:CreateConfigs()
 				type = 'range',
 				name = 'Timeframe',
 				desc = 'How many seconds into the future to predict HoTs',
-				min = 1,
+				min = 3,
 				max = 23,
 				step = 1,
 				get = function() return HCCdb.global.timeframe end,
@@ -715,7 +715,7 @@ function HealCommClassic:CreateConfigs()
 			desc1 = {
 				order = 17,
 				type = 'description',
-				name = 'Note: The plus and minus slider sets transparency'
+				name = 'Note: The plus and minus slider sets transparency.'
 			},
 			healColor = { 
 				order = 18,
@@ -766,7 +766,7 @@ function HealCommClassic:CreateConfigs()
 				type = 'toggle',
 				name = 'Feign death indicator',
 				descStyle = 'inline',
-				desc = 'Shows the text FEIGN instead of DEAD when a hunter feigns death',
+				desc = 'Shows the text \'FEIGN\' instead of \'DEAD\' when a hunter feigns death.',
 				width = 'full',
 				get = function() return HCCdb.global.feignIndicator end,
 				set = function(_, value) HCCdb.global.feignIndicator = value end,
@@ -799,7 +799,7 @@ function HealCommClassic:CreateConfigs()
 			continued = {
 				order = 20,
 				type = 'description',
-				name = '\n\nMore options will be added in the future',
+				name = '\n\nMore options will be added in the future.',
 			}
 		},
 	}
@@ -817,7 +817,7 @@ function HealCommClassic:CreateConfigs()
 				order = 2,
 				type = 'toggle',
 				name = 'Fast Raid Health Update',
-				desc = 'Forces extra health updates every second.\nMay impact framerate on low end machines.',
+				desc = 'Adds extra health updates every second.\nMay impact framerate on low end machines.',
 				descStyle = 'inline',
 				width = 'full',
 				get = function() return HCCdb.global.fastUpdate end,
