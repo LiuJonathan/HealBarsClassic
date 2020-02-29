@@ -67,6 +67,7 @@ local HCCdefault = {
 		hotColor = {120/255, 210/255, 65/255, 0.7},
 		feignIndicator = true,
 		predictiveHealthLost = false,
+		predictiveHealthLostOverheal = false,
 		fastUpdate = false,
 		fastUpdateDuration = 0.1, --10 updates per second
 	}
@@ -188,6 +189,9 @@ hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This
 	Purpose: Handle status text features
 --]]
 function CompactUnitFrame_UpdateStatusTextHook(frame)
+	-- Always reset the color to avoid visual color errors.
+	frame.statusText:SetTextColor(0.5, 0.5, 0.5)
+
 	if (not frame.statusText or not frame.optionTable.displayStatusText or not UnitIsConnected(frame.unit) or UnitIsDeadOrGhost(frame.displayedUnit)) then return end
 	
 	if (UnitIsFeignDeath(frame.displayedUnit) and HCCdb.global.feignIndicator) then
@@ -200,13 +204,27 @@ function CompactUnitFrame_UpdateStatusTextHook(frame)
 		local healthLost = UnitHealthMax(frame.displayedUnit) - UnitHealth(frame.displayedUnit)
 		local healthDelta = (currentHeals + currentHots) - healthLost
 		
-		if healthDelta >= 0 then
-			frame.statusText:Hide()
+		if ( HCCdb.global.predictiveHealthLostOverheal ) then 
+			if (healthDelta > 0) then
+				frame.statusText:SetTextColor(unpack(HCCdb.global.healColor))
+			else
+				frame.statusText:SetTextColor(0.5, 0.5, 0.5)
+			end
+			
+			if (healthLost == 0 and healthDelta == 0) then
+				frame.statusText:Hide();
+			else
+				frame.statusText:SetFormattedText("%d", healthDelta);
+				frame.statusText:Show();
+			end
 		else
-			frame.statusText:SetFormattedText("%d", healthDelta)
+			if healthDelta >= 0 then
+				frame.statusText:Hide()
+			else
+				frame.statusText:SetFormattedText("%d", healthDelta)
+			end
 		end
-		
-		
+
 	end 
 end
 
@@ -796,8 +814,18 @@ function HealCommClassic:CreateConfigs()
 				get = function() return HCCdb.global.predictiveHealthLost end,
 				set = function(_, value) HCCdb.global.predictiveHealthLost = value end,
 			},
+			predictiveHealthLostOverheal = {
+				order = 10,
+				type = 'toggle',
+				name = 'Show Overheals',
+				desc = 'Shows the total amount of incoming heals including overheals in the status text. The color is dependant on your color options \'Heal Color\'.',
+				descStyle = 'inline',
+				width = 'full',
+				get = function() return HCCdb.global.predictiveHealthLostOverheal end,
+				set = function(_, value) HCCdb.global.predictiveHealthLostOverheal = value end,
+			},
 			continued = {
-				order = 20,
+				order = 22,
 				type = 'description',
 				name = '\n\nMore options will be added in the future.',
 			}
