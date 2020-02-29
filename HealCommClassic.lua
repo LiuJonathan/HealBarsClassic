@@ -31,7 +31,7 @@ local libCHC = LibStub("LibHealComm-4.0", true)
 HealCommClassic = LibStub("AceAddon-3.0"):NewAddon("HealCommClassic")
 --Remember to update version number!!
 --Curseforge release starting from 1.1.7
-HealCommClassic.version = "1.3.0"
+HealCommClassic.version = "1.3.2"
 
 local hpBars = {} --incoming castedHeals
 local hotBars={} --incoming HoTs
