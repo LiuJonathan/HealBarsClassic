@@ -1,34 +1,10 @@
-tag ce9f0545cc903486d3f1e2e0ab9eac3f233e129b v1.7.3
+tag c992abb23bd7b0025089884bb0d3e280b3c71e2b v1.7.9
 Author:	Azilroka <darktemplar9900@yahoo.com>
-Date:	Tue Dec 3 15:18:29 2019 -0600
+Date:	Sun Feb 9 10:56:40 2020 -0600
 
-commit 75ce18a07a4d92fbae01a6171262a0fcdab4aa10
+commit 36a6274214ea6f782a552a030f60a3062cd4c9da
 Author: Azilroka <darktemplar9900@yahoo.com>
-Date:   Tue Dec 3 15:17:53 2019 -0600
+Date:   Sun Feb 9 10:56:27 2020 -0600
 
-    Minor 83
-
-commit 41a9c7d5a3a98bc1fa09c336dd0a36ab2fb7c11d
-Author: dev7355608 <dev7355608@gmail.com>
-Date:   Wed Nov 27 00:34:14 2019 +0100
-
-    Fix delayed heals
-
-commit 41a9c7d5a3a98bc1fa09c336dd0a36ab2fb7c11d
-Author: dev7355608 <dev7355608@gmail.com>
-Date:   Wed Nov 27 00:34:14 2019 +0100
-
-    Fix delayed heals
-
-commit 41a9c7d5a3a98bc1fa09c336dd0a36ab2fb7c11d
-Author: dev7355608 <dev7355608@gmail.com>
-Date:   Wed Nov 27 00:34:14 2019 +0100
-
-    Fix delayed heals
-
-commit 52a34b71ec42dc08c7a797a181acc8817ef016a3
-Author: dev7355608 <dev7355608@gmail.com>
-Date:   Tue Nov 26 00:37:52 2019 +0100
-
-    Fix Swiftmend
+    minor 89
 
