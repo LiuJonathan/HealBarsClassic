@@ -549,7 +549,6 @@ function HealCommClassic:UpdateIncoming(...)
 					unitframe = getglobal(frame:GetName().."Button"..z)
 					if unitframe.unit and UnitExists(unitframe.unit) and UnitGUID(unitframe.unit) == targetGUID then
 						self:UpdateFrame(getglobal(unitframe:GetName().."HealthBar"), unitframe.unit, amount, hotAmount)
-						CompactUnitFrame_UpdateStatusText(unitframe.healthBar:GetParent())
 					end
 				end
 			end
