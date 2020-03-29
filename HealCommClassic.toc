@@ -1,4 +1,4 @@
-## Interface: 11303
+## Interface: 11304
 ## Title: HealCommClassic
 ## SavedVariables: HealCommSettings
 ## OptionalDeps: LibHealComm-4.0, Blizzard_RaidUI, Blizzard_CompactRaidFrames
