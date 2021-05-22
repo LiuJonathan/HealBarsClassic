@@ -1,6 +1,6 @@
 package-as: HealCommClassic
 externals:
     libs/Ace-3.0:
-        url: svn://repos.wowace.com/wow/ace3/trunk
+        url: https://repos.curseforge.com/wow/ace3/trunk
     libs/LibHealComm-4.0:
-        url: git://git.wowace.com/wow/libhealcomm-4-0/mainline.git
+        url: git.wowace.com/wow/libhealcomm-4-0/mainline.git
