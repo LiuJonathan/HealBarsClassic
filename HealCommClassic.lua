@@ -152,7 +152,10 @@ function HealCommClassic:UpdateFrameHeals(unitFrame)
 	if currentHealsForFrame then
 	
 		for barType in ipairs(healBarTypeOrder) do
+	
 			local barFrame = healBarTable[barType]
+			
+			if barFrame then 
 			local amount = currentHealsForFrame[barType]
 			
 			if( amount and amount > 0 and (health < maxHealth or HCCdb.global.overhealPercent > 0 )) 
@@ -175,6 +178,7 @@ function HealCommClassic:UpdateFrameHeals(unitFrame)
 				barFrame:SetPoint("TOPLEFT", healthBar, "TOPLEFT", healthWidth, 0)
 			else
 				barFrame:Hide()
+			end
 			end
 		
 		end
@@ -534,7 +538,7 @@ function HealCommClassic:UpdateIncoming(...)
 		if HCCdb.global.seperateHots and HCCdb.global.showHots then
 			hotAmount= (libCHC:GetHealAmount(targetGUID, hotType, GetTime()+HCCdb.global.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
 		end
-		
+		print('heal amount = '..amount+hotAmount)
 		if not currentHeals[targetGUID] then
 			currentHeals[targetGUID] = {}
 		end
