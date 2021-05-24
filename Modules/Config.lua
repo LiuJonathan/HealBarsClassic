@@ -6,7 +6,7 @@ local addon = HealCommClassic
 	Notes: 
 		For convenience, order is incremented in steps of two so new options can be squeezed between them.
 ]]--
-function HCC:CreateConfigs()
+function HealCommClassic:CreateConfigs()
 	local options = {
 		name = 'HealCommClassic Options',
 		type = 'group',
