@@ -28,34 +28,41 @@
 
 local libCHC = LibStub("LibHealComm-4.0", true)
 
-HealCommClassic = LibStub("AceAddon-3.0"):NewAddon("HealCommClassic")
+HealCommClassic = LibStub("AceAddon-3.0"):NewHCC("HealCommClassic")
 --Remember to update version number!!
 --Curseforge release starting from 1.1.7
 HealCommClassic.version = "1.3.3"
 
-local hpBars = {} --incoming castedHeals
-local hotBars={} --incoming HoTs
-local healColor,hotColor
+local HCC = HealCommClassic
+local healBarTable = {} --when init initalize heal bar type
+local guidUnitFrameMap = {}
+local healBarTypeList = {}
+local healBarColors = {}
+local healBarTypeOrder = {}
 
-local frames = {
-				["player"] = { bar = getglobal("PlayerFrameHealthBar"), frame = _G["PlayerFrame"] },
-				["pet"] = { bar = getglobal("PetFrameHealthBar"), frame = _G["PetFrame"] },
-				["target"] = { bar = getglobal("TargetFrameHealthBar"), frame = _G["TargetFrame"] },
-				["party1"] = { bar = getglobal("PartyMemberFrame1HealthBar"), frame = _G["PartyMemberFrame1"] },
-				["partypet1"] = { bar = getglobal("PartyMemberFrame1PetFrameHealthBar"), frame = _G["PartyMemberFrame1PetFrame"] },
-				["party2"] = { bar = getglobal("PartyMemberFrame2HealthBar"), frame = _G["PartyMemberFrame2"] },
-				["partypet2"] = { bar = getglobal("PartyMemberFrame2PetFrameHealthBar"), frame = _G["PartyMemberFrame2PetFrame"] },
-				["party3"] = { bar = getglobal("PartyMemberFrame3HealthBar"), frame = _G["PartyMemberFrame3"] },
-				["partypet3"] = { bar = getglobal("PartyMemberFrame3PetFrameHealthBar"), frame = _G["PartyMemberFrame3PetFrame"] },
-				["party4"] = { bar = getglobal("PartyMemberFrame4HealthBar"), frame = _G["PartyMemberFrame4"] },
-				["partypet4"] = { bar = getglobal("PartyMemberFrame4PetFrameHealthBar"), frame = _G["PartyMemberFrame4PetFrame"] },
-				}
+local currentHeals = {}
+local HCCdb = {}
+
 
 local partyGUIDs = {
 	[UnitGUID("player")] = "player",
 }
-local currentHeals = {}
-local currentHots ={}
+
+local globalFrameList = {
+				["player"] = _G["PlayerFrame"] ,
+				["pet"] =  _G["PetFrame"],
+				["target"] = _G["TargetFrame"],
+				["focus"] = _G["FocusFrame"],
+				["party1"] = _G["PartyMemberFrame1"],
+				["partypet1"] = _G["PartyMemberFrame1PetFrame"],
+				["party2"] = _G["PartyMemberFrame2"],
+				["partypet2"] = _G["PartyMemberFrame2PetFrame"],
+				["party3"] = _G["PartyMemberFrame3"],
+				["partypet3"] = _G["PartyMemberFrame3PetFrame"],
+				["party4"] = _G["PartyMemberFrame4"],
+				["partypet4"] = _G["PartyMemberFrame4PetFrame"],
+				}
+
 
 local HCCdefault = {
 	global = {
@@ -72,138 +79,182 @@ local HCCdefault = {
 	}
 }
 
-local HCCdb = {}
+function HCC:getHealColor(healType)
+	return unpack(healColors[healType])
+end
 
---[[
+function HCC:CreateAllHealBars()
+	for unitFrame in ipairs(globalFrameList) do
+		HCC:createHealBars(unitFrame)
+	end
+
+end
+
+
+--[[x
+
+--]]
+function HCC:CreateHealBars(unitFrame)
+	if not unitFrame or unitFrame.isForbidden() then return end
+	if not healBarTable[unitFrame] then
+		healBarTable[unitFrame] = {}
+	end
+	local currentBarList = healBarTable[unitFrame]
+	
+	local unitFrameList = guidUnitFrameMap[UnitGUID(unitFrame.displayedUnit)]
+	if not unitFrameList then 
+		unitFrameList = {}
+		guidUnitFrameMap[UnitGUID(unitFrame.displayedUnit)] = unitFrameList
+	end
+	unitFrameList.insert(unitFrame)
+	
+	
+	for healType, properties in pairs(activateBarTypes) do
+		
+		if not currentBarList[healType] then
+			currentBarList[healType] = CreateFrame("StatusBar"
+				, "IncHealBar"..unitFrame.displayedUnit..healType, unitFrame)
+			currentBarList[healType]:SetFrameStrata("LOW")
+			currentBarList[healType]:SetFrameLevel(currentBarList[healType]:GetFrameLevel()-1)
+			currentBarList[healType]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+			currentBarList[healType]:SetMinMaxValues(0, 1)
+			currentBarList[healType]:SetValue(1)
+			currentBarList[healType]:SetStatusBarColor(unpack(HCC:getHealColor(healType)))
+		end
+	end
+end
+
+
+
+--[[x
+	Function: UpdateFrame
+	Purpose: Updates heal bars for a single unit frame after a non-healing event
+--]]
+function HCC:UpdateFrameHeals(unitFrame)
+	local healthBar = unitFrame.healthBar
+	local unit = unitFrame.displayedUnit
+	local maxHealth= UnitHealth(unit)
+	local healthWidth=unitFrame:GetWidth() * (health / maxHealth)
+	local health
+	
+	for unitFrame, barTable in pairs(healBars) do
+	
+		local healWidthTotal = 0
+		local currentHealsForFrame = currentHeals[UnitGUID(unitFrame.displayedUnit)]
+	
+		if currentHealsForFrame then
+		
+			for barType in ipairs() do
+				local barFrame = barTable[barType]
+				local amount = currentHealsForFrame[barType]
+				
+				if( amount and amount > 0 and (health < maxHealth or HCCdb.global.overhealPercent > 0 )) 
+						and healthBar:IsVisible() then
+					local healWidth
+					local maxWidth = healthBar:GetWidth() * (1+(HCCdb.global.overhealPercent/100))
+					
+					if healWidth + healWidthTotal + healWidth <= maxWidth then
+						healWidth = healthBar:GetWidth() * (amount / maxHealth)
+					elseif (healWidth + healWidthTotal) >= maxWidth  then
+						barFrame:Hide()
+					else
+						healWidth = maxWidth - healWidthTotal
+					end
+					barFrame:SetWidth(incHealWidth)
+					
+					
+					barFrame:SetHeight(healthBar:GetHeight())
+					barFrame:ClearAllPoints()
+					barFrame:SetPoint("TOPLEFT", healthBar, "TOPLEFT", healthWidth, 0)
+				else
+					barFrame:Hide()
+				end
+			
+			end
+		end
+	end
+end
+
+--[[x
 	Function: RaidPulloutButton_OnLoadHook
 	Purpose: Creates heal bars for raid members upon joining a raid
-	Inputs: self
-		Where self is a unit frame to update
 ]]--
-local function RaidPulloutButton_OnLoadHook(self)
-	if not hpBars[self] then
-		hpBars[getglobal(self:GetParent():GetName().."HealthBar")] = CreateFrame("StatusBar", self:GetName().."HealthBarIncHeal" , self)
-		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetFrameStrata("LOW")
-		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetFrameLevel(hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:GetFrameLevel()-1)
-		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetMinMaxValues(0, 1)
-		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetValue(1)
-		hpBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetStatusBarColor(unpack(HCCdb.global.healColor))
-	end
-	if not hotBars[self] then
-		hotBars[getglobal(self:GetParent():GetName().."HealthBar")] = CreateFrame("StatusBar", self:GetName().."HotBarIncHeal" , self)
-		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetFrameStrata("LOW")
-		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetFrameLevel(hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:GetFrameLevel()-1)
-		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetMinMaxValues(0, 1)
-		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetValue(1)
-		hotBars[getglobal(self:GetParent():GetName().."HealthBar")]:SetStatusBarColor(unpack(HCCdb.global.hotColor))
-	end
+local function RaidPulloutButton_OnLoadHook(unitFrame)
+	HCC:CreateHealBars(_G(unitFrame:GetParent():GetName()))
 end
 
---[[
+--[[x
 	Function: UnitFrameHealthBar_OnValueChangedHook
 	Purpose: Updates unit frames when a unit's max health changes
-	Inputs: self
-		Where self is a unit frame to update
 ]]--
-local function UnitFrameHealthBar_OnValueChangedHook(self)
-	HealCommClassic:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
+local function UnitFrameHealthBar_OnValueChangedHook(unitFrame)
+	HCC:UpdateFrameHeals(unitFrame)
 end
 
 
---[[
+--[[x
 	Function: UnitFrameHealthBar_OnUpdateHook
 	Purpose: Updates unit frames when a unit's health changes
-	Inputs: self
-		Where self is a unit frame to update
-	Notes: 
-		Function hook happens immediately after function definition	
 ]]--
-local function UnitFrameHealthBar_OnUpdateHook(self)
-	if self.unit ~= "player" then return end
-	HealCommClassic:UpdateFrame(self, self.unit, currentHeals[UnitGUID(self.unit)] or 0, currentHots[UnitGUID(self.unit)] or 0)
+local function UnitFrameHealthBar_OnUpdateHook(unitFrame)
+	if unitFrame.unit ~= "player" then return end
+	HCC:UpdateFrameHeals(self)
 end
 hooksecurefunc("UnitFrameHealthBar_OnUpdate", UnitFrameHealthBar_OnUpdateHook) -- This needs early hooking
 
 
---[[
+--[[x
 	Function: CompactUnitFrame_UpdateHealthHook
 	Purpose: Update heal bars when a unit's health changes
-	Inputs: self
-		Where self is a unit frame to update
 ]]--
-local function CompactUnitFrame_UpdateHealthHook(self)
-	if not hpBars[self.healthBar] and not hotBars[self.healthBar] then return end
-	HealCommClassic:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0, currentHots[UnitGUID(self.displayedUnit)] or 0)
+local function CompactUnitFrame_UpdateHealthHook(unitFrame)
+	HCC:UpdateFrameHeals(unitFrame)
 end
 
 
---[[
+--[[x
 	Function: CompactUnitFrame_UpdateMaxHealthHook
 	Purpose: Update heal calculations after a max health change
 	Inputs: self
 		Where self is a unit frame to update
 ]]--
-local function CompactUnitFrame_UpdateMaxHealthHook(self)
-	if not hpBars[self.healthBar] and not hotBars[self.healthBar] then return end
-	HealCommClassic:UpdateFrame(self.healthBar, self.displayedUnit, currentHeals[UnitGUID(self.displayedUnit)] or 0, currentHots[UnitGUID(self.displayedUnit)] or 0)
+local function CompactUnitFrame_UpdateMaxHealthHook(unitFrame)
+	HCC:UpdateFrameHeals(unitFrame)
 end
 
 
---[[
+--[[x
 	Function: CompactUnitFrame_SetUnitHook
 	Purpose: Create a new heal bar whenever any frame is assigned a new unit
-	Inputs: self, Unit
-		Where self is a parent frame to attach to
-		Where Unit is the UnitID of the unit being added
-	Notes: 
-		Function hook happens immediately after function definition	
 ]]--
-local function CompactUnitFrame_SetUnitHook(self, unit)
-	if (self:IsForbidden()) then return end --Catch for forbidden nameplates in dungeons/raids
-	if not hpBars[self.healthBar] then
-		hpBars[self.healthBar] = CreateFrame("StatusBar", nil, self)
-		hpBars[self.healthBar]:SetFrameStrata("LOW")
-		hpBars[self.healthBar]:SetFrameLevel(hpBars[self.healthBar]:GetFrameLevel()-1)
-		hpBars[self.healthBar]:SetStatusBarTexture("Interface\\RaidFrame\\Raid-Bar-Hp-Fill")
-		hpBars[self.healthBar]:SetMinMaxValues(0, 1)
-		hpBars[self.healthBar]:SetValue(1)
-		hpBars[self.healthBar]:SetStatusBarColor(unpack(HCCdb.global.healColor))
-	end
-	if not hotBars[self.healthBar] then
-		hotBars[self.healthBar] = CreateFrame("StatusBar", nil, self)
-		hotBars[self.healthBar]:SetFrameStrata("LOW")
-		hotBars[self.healthBar]:SetFrameLevel(hotBars[self.healthBar]:GetFrameLevel()-1)
-		hotBars[self.healthBar]:SetStatusBarTexture("Interface\\RaidFrame\\Raid-Bar-Hp-Fill")
-		hotBars[self.healthBar]:SetMinMaxValues(0, 1)
-		hotBars[self.healthBar]:SetValue(1)
-		hotBars[self.healthBar]:SetStatusBarColor(unpack(HCCdb.global.hotColor))
-	end
+local function CompactUnitFrame_SetUnitHook(unitFrame)
+	HCC:CreateHealBars(unitFrame)
 end
 hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This needs early hooking
 
---[[
+--[[x
 	Function: CompactUnitFrame_UpdateStatusTextHook
 	Purpose: Handle status text features
 --]]
-function CompactUnitFrame_UpdateStatusTextHook(frame)
-	if (not frame.statusText or not frame.optionTable.displayStatusText or not UnitIsConnected(frame.unit) or UnitIsDeadOrGhost(frame.displayedUnit)) then return end
+function CompactUnitFrame_UpdateStatusTextHook(unitFrame)
+	if (not unitFrame.statusText or not unitFrame.optionTable.displayStatusText 
+		or not UnitIsConnected(unitFrame.unit) or UnitIsDeadOrGhost(unitFrame.displayedUnit)) then return end
 	
-	if (UnitIsFeignDeath(frame.displayedUnit) and HCCdb.global.feignIndicator) then
-		frame.statusText:SetText('FEIGN')
+	if (UnitIsFeignDeath(unitFrame.displayedUnit) and HCCdb.global.feignIndicator) then
+		unitFrame.statusText:SetText('FEIGN')
 	end
 
-	if ( frame.optionTable.healthText == "losthealth" and HCCdb.global.predictiveHealthLost ) then
-		local currentHeals = currentHeals[UnitGUID(frame.displayedUnit)] or 0
-		local currentHots = currentHots[UnitGUID(frame.displayedUnit)] or 0
-		local healthLost = UnitHealthMax(frame.displayedUnit) - UnitHealth(frame.displayedUnit)
+	--predictive health lost feature
+	if ( unitFrame.optionTable.healthText == "losthealth" and HCCdb.global.predictiveHealthLost ) then
+		local currentHeals = currentHeals[UnitGUID(unitFrame.displayedUnit)] or 0
+		local currentHots = currentHots[UnitGUID(unitFrame.displayedUnit)] or 0
+		local healthLost = UnitHealthMax(unitFrame.displayedUnit) - UnitHealth(unitFrame.displayedUnit)
 		local healthDelta = (currentHeals + currentHots) - healthLost
 		
 		if healthDelta >= 0 then
-			frame.statusText:Hide()
+			unitFrame.statusText:Hide()
 		else
-			frame.statusText:SetFormattedText("%d", healthDelta)
+			unitFrame.statusText:SetFormattedText("%d", healthDelta)
 		end
 		
 		
@@ -258,46 +309,17 @@ function HealCommClassic:OnInitialize()
 	libCHC.RegisterCallback(HealCommClassic, "HealComm_GUIDDisappeared")
 end
 
-
---[[
-	Function: CreateBars
-	Purpose: Create and initalize heal bars for all frames
-]]--
-function HealCommClassic:CreateBars()
-	for unit,v in pairs(frames) do
-		if not hpBars[v] then
-			hpBars[v.bar] = CreateFrame("StatusBar", "IncHealBar"..unit, v.frame)
-			hpBars[v.bar]:SetFrameStrata("LOW")
-			hpBars[v.bar]:SetFrameLevel(hpBars[v.bar]:GetFrameLevel()-1)
-			hpBars[v.bar]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-			hpBars[v.bar]:SetMinMaxValues(0, 1)
-			hpBars[v.bar]:SetValue(1)
-			hpBars[v.bar]:SetStatusBarColor(unpack(HCCdb.global.healColor))
-		end
-		if not hotBars[v] then
-			hotBars[v.bar] = CreateFrame("StatusBar", "IncHotBar"..unit, v.frame)
-			hotBars[v.bar]:SetFrameStrata("LOW")
-			hotBars[v.bar]:SetFrameLevel(hotBars[v.bar]:GetFrameLevel()-1)
-			hotBars[v.bar]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-			hotBars[v.bar]:SetMinMaxValues(0, 1)
-			hotBars[v.bar]:SetValue(1)
-			hotBars[v.bar]:SetStatusBarColor(unpack(HCCdb.global.hotColor))
-		end
-	end
-end
-
-
---[[
+--[[x
 	Function: UpdateColors
 	Purpose: Update the color of all heal bars
 ]]--
 function HealCommClassic:UpdateColors()
-	for unit,v in pairs(hpBars) do
-		if hpBars[unit] then
-			hpBars[unit]:SetStatusBarColor(unpack(HCCdb.global.healColor))
-		end
-		if hotBars[unit] then
-			hotBars[unit]:SetStatusBarColor(unpack(HCCdb.global.hotColor))
+	for unitFrame, barTable in pairs(healBars) do
+	
+		for barType in ipairs(activeBarTypes) do
+			local barFrame = barTable[barType]
+			barFrame:SetStatusBarColor(HCC:getHealColor(healType))
+		
 		end
 	end
 end
@@ -305,26 +327,27 @@ end
 --[[
 	Function: UpdateHealthValuesLoop
 	Purpose: Force health and max health value update
+		Experimental - may not actually work
 --]]
 function HealCommClassic:UpdateHealthValuesLoop()
 	if UnitInRaid("player") and HCCdb.global.fastUpdate then
-		unitframe = _G["CompactRaidFrame1"]
+		unitFrame = _G["CompactRaidFrame1"]
 		num = 1
-		while unitframe do
-			if unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) then
-				CompactUnitFrame_UpdateMaxHealth(unitframe.healthBar:GetParent())
-				CompactUnitFrame_UpdateHealth(unitframe.healthBar:GetParent())
+		while unitFrame do
+			if unitFrame.displayedUnit and UnitExists(unitFrame.displayedUnit) then
+				CompactUnitFrame_UpdateMaxHealth(unitFrame.healthBar:GetParent())
+				CompactUnitFrame_UpdateHealth(unitFrame.healthBar:GetParent())
 			end
 			num = num + 1
-			unitframe = _G["CompactRaidFrame"..num]
+			unitFrame = _G["CompactRaidFrame"..num]
 		end
 		for k=1, NUM_RAID_PULLOUT_FRAMES do
 			frame = getglobal("RaidPullout"..k)
 			for z=1, frame.numPulloutButtons do
-				unitframe = getglobal(frame:GetName().."Button"..z)
-				if unitframe.unit and UnitExists(unitframe.unit) then
-					CompactUnitFrame_UpdateMaxHealth(unitframe.healthBar:GetParent())
-					CompactUnitFrame_UpdateHealth(unitframe.healthBar:GetParent())
+				unitFrame = getglobal(frame:GetName().."Button"..z)
+				if unitFrame.unit and UnitExists(unitFrame.unit) then
+					CompactUnitFrame_UpdateMaxHealth(unitFrame.healthBar:GetParent())
+					CompactUnitFrame_UpdateHealth(unitFrame.healthBar:GetParent())
 				end
 			end
 		end
@@ -332,10 +355,10 @@ function HealCommClassic:UpdateHealthValuesLoop()
 			local grpHeader = "CompactRaidGroup"..i
 			if _G[grpHeader] then
 				for k=1, 5 do
-					unitframe = _G[grpHeader.."Member"..k]
-					if unitframe and unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) then
-						CompactUnitFrame_UpdateMaxHealth(unitframe.healthBar:GetParent())
-						CompactUnitFrame_UpdateHealth(unitframe.healthBar:GetParent())				
+					unitFrame = _G[grpHeader.."Member"..k]
+					if unitFrame and unitFrame.displayedUnit and UnitExists(unitFrame.displayedUnit) then
+						CompactUnitFrame_UpdateMaxHealth(unitFrame.healthBar:GetParent())
+						CompactUnitFrame_UpdateHealth(unitFrame.healthBar:GetParent())				
 					end
 				end
 			end
@@ -362,8 +385,8 @@ function HealCommClassic:UNIT_PET(unit)
 	if UnitExists(petunit) then
 		partyGUIDs[UnitGUID(petunit)] = petunit
 	end
-	if hpBars[frames[petunit].bar] or hotBars[frames[petunit].bar] then
-		self:UpdateFrame(frames[petunit].bar, petunit, currentHeals[UnitGUID("pet")] or 0, currentHots[UnitGUID("pet")] or 0)
+	if hpBars[globalFrameList[petunit].bar]then
+		self:UpdateFrame(globalFrameList[petunit].bar, petunit, currentHeals[UnitGUID("pet")] or 0, currentHots[UnitGUID("pet")] or 0)
 	end
 end
 
@@ -372,16 +395,17 @@ end
 	Purpose: Update player target heal bars
 ]]--
 function HealCommClassic:PLAYER_TARGET_CHANGED()
-	self:UpdateFrame(frames["target"].bar, "target", currentHeals[UnitGUID("target")] or 0, currentHots[UnitGUID("target")] or 0)
+	self:UpdateFrame(globalFrameList["target"].healthBar, "target"
+		, currentHeals[UnitGUID("target")] or 0, currentHots[UnitGUID("target")] or 0)
 end
 
 
---[[
+--[[x
 	Function: PLAYER_ROLES_ASSIGNED
 	Purpose: Update party and raid heal bars after a raid role assignment
 ]]--
 function HealCommClassic:PLAYER_ROLES_ASSIGNED() 
-	local frame, unitframe, num
+	local frame, unitFrame, num
 	for guid,unit in pairs(partyGUIDs) do
 		if strsub(unit,1,5) == "party" then
 			partyGUIDs[guid] = nil
@@ -397,43 +421,35 @@ function HealCommClassic:PLAYER_ROLES_ASSIGNED()
 				break
 			end
 		end
-		unitframe = _G["CompactPartyFrameMember1"]
+		unitFrame = _G["CompactPartyFrameMember1"]
 		num = 1
-		while unitframe do
-			if unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) then
-				self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, amount, hotAmount) --no amount declaration? call just hides bars
-			end
+		while unitFrame do
+			HCC:UpdateFrameHeals(unitFrame)
 			num = num + 1
-			unitframe = _G["CompactPartyFrameMember"..num]
+			unitFrame = _G["CompactPartyFrameMember"..num]
 		end
-		unitframe = _G["CompactRaidFrame1"]
+		unitFrame = _G["CompactRaidFrame1"]
 		num = 1
-		while unitframe do
-			if unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) then
-				self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, amount, hotAmount)
-			end
+		while unitFrame do
+			HCC:UpdateFrameHeals(unitFrame)
 			num = num + 1
-			unitframe = _G["CompactRaidFrame"..num]
+			unitFrame = _G["CompactRaidFrame"..num]
 		end
 	end
 	if UnitInRaid("player") then
 		for k=1, NUM_RAID_PULLOUT_FRAMES do
-			frame = getglobal("RaidPullout"..k)
+			frame = _G["RaidPullout"..k]
 			for z=1, frame.numPulloutButtons do
-				unitframe = getglobal(frame:GetName().."Button"..z)
-				if unitframe.unit and UnitExists(unitframe.unit) then
-					self:UpdateFrame(getglobal(unitframe:GetName().."HealthBar"), unitframe.unit, currentHeals[UnitGUID(unitframe.unit)] or 0, currentHots[UnitGUID(unitframe.unit)] or 0)
-				end
+				unitFrame = _G[frame:GetName().."Button"..z]
+				HCC:UpdateFrameHeals(unitFrame)
 			end
 		end
 		for i=1, 8 do
 			local grpHeader = "CompactRaidGroup"..i
 			if _G[grpHeader] then
 				for k=1, 5 do
-					unitframe = _G[grpHeader.."Member"..k]
-					if unitframe and unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) then
-						self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, currentHeals[UnitGUID(unitframe.displayedUnit)] or 0, currentHots[UnitGUID(unitframe.displayedUnit)] or 0)
-					end
+					unitFrame = _G[grpHeader.."Member"..k]
+					HCC:UpdateFrameHeals(unitFrame)
 				end
 			end
 		end
@@ -441,7 +457,7 @@ function HealCommClassic:PLAYER_ROLES_ASSIGNED()
 end
 
 
---[[
+--[[x
 	Function: HealCommClassic_HealUpdated
 	Purpose: HealCommLib callback handler
 			Redirect callback
@@ -454,7 +470,7 @@ function HealCommClassic:HealComm_HealUpdated(event, casterGUID, spellID, healTy
 end
 
 
---[[
+--[[x
 	Function: HealComm_HealStopped
 	Purpose: HealCommLib callback handler
 			Redirect callback
@@ -467,7 +483,7 @@ function HealCommClassic:HealComm_HealStopped(event, casterGUID, spellID, healTy
 end
 
 
---[[
+--[[x
 	Function: HealComm_ModifierChanged
 	Purpose: HealCommLib callback handler
 			Redirect callback
@@ -480,7 +496,7 @@ function HealCommClassic:HealComm_ModifierChanged(event, guid)
 end
 
 
---[[
+--[[x
 	Function: HealComm_GUIDDisappeared
 	Purpose: Update heal bars after a GUID disappears from view
 	Inputs: Event, GUID
@@ -492,14 +508,14 @@ function HealCommClassic:HealComm_GUIDDisappeared(event, guid)
 end
 
 
---[[
+--[[x
 	Function: UpdateIncoming
 	Purpose: Stores incoming healing information from healcomm library
 	Inputs: args
 			A table of GUIDs to update
 --]]
 function HealCommClassic:UpdateIncoming(...)
-	local targetGUID, num, frame, unitframe, healType
+	local targetGUID, num, frame, unitFrame, healType
 	local hotType=libCHC.HOT_HEALS
 	if HCCdb.global.showHots and not HCCdb.global.seperateHots then
 		healType = libCHC.ALL_HEALS
@@ -515,318 +531,22 @@ function HealCommClassic:UpdateIncoming(...)
 		end
 		currentHots[targetGUID] = hotAmount 
 		currentHeals[targetGUID] = amount 
-		if UnitGUID("target") == targetGUID then 
-			self:UpdateFrame(frames["target"].bar, "target", amount, hotAmount)
-		end
-		if partyGUIDs[targetGUID] then
-			self:UpdateFrame(frames[partyGUIDs[targetGUID]].bar, partyGUIDs[targetGUID], amount,hotAmount)
-		end
-		if UnitInParty("player") then
-			unitframe = _G["CompactPartyFrameMember1"]
-			num = 1
-			while unitframe do
-				if unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) and UnitGUID(unitframe.displayedUnit) == targetGUID then
-					self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, amount, hotAmount)
-				end
-				num = num + 1
-				unitframe = _G["CompactPartyFrameMember"..num]
-			end
-			unitframe = _G["CompactRaidFrame1"]
-			num = 1
-			while unitframe do
-				if unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) and UnitGUID(unitframe.displayedUnit) == targetGUID then
-					self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, amount, hotAmount)
-					CompactUnitFrame_UpdateStatusText(unitframe.healthBar:GetParent())
-				end
-				num = num + 1
-				unitframe = _G["CompactRaidFrame"..num]
-			end
-		end
-		if UnitInRaid("player") then
-			for k=1, NUM_RAID_PULLOUT_FRAMES do
-				frame = getglobal("RaidPullout"..k)
-				for z=1, frame.numPulloutButtons do
-					unitframe = getglobal(frame:GetName().."Button"..z)
-					if unitframe.unit and UnitExists(unitframe.unit) and UnitGUID(unitframe.unit) == targetGUID then
-						self:UpdateFrame(getglobal(unitframe:GetName().."HealthBar"), unitframe.unit, amount, hotAmount)
-					end
-				end
-			end
-			for j=1, 8 do
-				local grpHeader = "CompactRaidGroup"..j
-				if _G[grpHeader] then
-					for k=1, 5 do
-						unitframe = _G[grpHeader.."Member"..k]
-						if unitframe and unitframe.displayedUnit and UnitExists(unitframe.displayedUnit) and UnitGUID(unitframe.displayedUnit) == targetGUID then
-							self:UpdateFrame(unitframe.healthBar, unitframe.displayedUnit, currentHeals[UnitGUID(unitframe.displayedUnit)] or 0, currentHots[UnitGUID(unitframe.displayedUnit)] or 0)
-							CompactUnitFrame_UpdateStatusText(unitframe.healthBar:GetParent())
-						end
-					end
-				end
-			end
-		end
-	end
-end
-
-
---[[
-	Function: UpdateFrame
-	Purpose: Updates heal bar sizes based on incoming healing
-	Inputs: Frame, Unit, Amount, hotAmount
-		Where Frame is the heal bar frame to update
-		Where Unit is the UnitID that the heal bar references
-		Where Amount is the amount of incoming healing
-		Where hotAmount is the amount of incoming HoTs
---]]
-function HealCommClassic:UpdateFrame(frame, unit, amount, hotAmount)
-	local health, maxHealth= UnitHealth(unit), UnitHealthMax(unit)
-	local healthWidth=frame:GetWidth() * (health / maxHealth)
-	local incWidth=0
-
-	if( amount and amount > 0 and (health < maxHealth or HCCdb.global.overhealPercent > 0 )) and frame:IsVisible() then
-		hpBars[frame]:Show()
-		incWidth = frame:GetWidth() * (amount / maxHealth)
-		if (healthWidth + incWidth) > (frame:GetWidth() * (1+(HCCdb.global.overhealPercent/100)) ) then
-			incWidth = frame:GetWidth() * (1+(HCCdb.global.overhealPercent/100)) - healthWidth
-		end
-		hpBars[frame]:SetWidth(incWidth)
-		hpBars[frame]:SetHeight(frame:GetHeight())
-		hpBars[frame]:ClearAllPoints()
-		hpBars[frame]:SetPoint("TOPLEFT", frame, "TOPLEFT", healthWidth, 0)
-	else
-		hpBars[frame]:Hide()
-	end
-
-	if( hotAmount and hotAmount > 0 and (health < maxHealth or HCCdb.global.overhealPercent > 0 )) and frame:IsVisible() then
-		hotBars[frame]:Show()
-		local hotWidth = frame:GetWidth() * (hotAmount / maxHealth)
-		if (healthWidth + hotWidth + incWidth) > (frame:GetWidth() * (1+(HCCdb.global.overhealPercent/100)) ) then -- can be compressed with better math
-			hotWidth = frame:GetWidth() * (1+(HCCdb.global.overhealPercent/100)) - healthWidth - incWidth
-			if hotWidth <= 0 then
-				hotBars[frame]:Hide() 
-			end
-		end
 		
-		hotBars[frame]:SetWidth(hotWidth)
-		hotBars[frame]:SetHeight(frame:GetHeight())
-		hotBars[frame]:ClearAllPoints()
-		hotBars[frame]:SetPoint("TOPLEFT", frame, "TOPLEFT", healthWidth + incWidth, 0)
-	else
-		hotBars[frame]:Hide()
+		local guidHealBarList = guidUnitFrameMap[targetGUID]
+		if guidHealBarList then
+			
+			for unitFrame in ipairs(guidUnitFrameMap) do
+			
+				HCC:UpdateFrameHeals(unitFrame)
+				CompactUnitFrame_UpdateStatusText(unitFrame)
+			
+			end
+		
+		end
 	end
-end
 
-
---[[
-	Function: CreateConfigs
-	Purpose: Create and attach options page
-	Notes: 
-		For convenience, order is incremented in steps of two so new options can be squeezed between them.
-]]--
-function HealCommClassic:CreateConfigs()
-	local options = {
-		name = 'HealCommClassic Options',
-		type = 'group',
-		args = {
-			desc1 = {
-				order = 0,
-				type = 'description',
-				width = 2.5,
-				name = 'Version '..HealCommClassic.version,
-			},
-			button0 = {
-				order = 1,
-				type = 'execute',
-				name = 'Reset to defaults',
-				confirm = true,
-				func = function() HCCdb:ResetDB() end
-			},
-			desc2 = {
-				order = 2,
-				type = 'description',
-				width = 'full',
-				name = 'HealCommClassic is an implementation of HealComm (LibHealComm) for Blizzard\'s raid frames'
-			},
-		},
-	}
-	options.args['healthBars'] = {
-		name = 'Health Bars',
-		type = 'group',
-		order = 0,
-		args = {
-			header0 = {
-				order = 2,
-				type = 'header',
-				name = 'General Settings',
-			},
-			overheal = {
-				order = 4,
-				type = 'range',
-				name = 'Extend Overheals',
-				desc = 'How far heals can extend on overhealing, in percentage of the health bar size',
-				min = 0,
-				max = 0.5,
-				step = 0.01,
-				isPercent = true,
-				get = function() return HCCdb.global.overhealPercent / 100 end,
-				set = function(_,value) HCCdb.global.overhealPercent = value * 100 end,
-			},
-			spacer1 = {
-				order = 6,
-				type = 'description',
-				name = '\n',
-			},
-			header1 = {
-				order = 8,
-				type = 'header',
-				name = 'Heal Over Times'
-			},
-			hotToggle = {
-				order = 10,
-				type = 'toggle',
-				name = 'Show HoTs',
-				desc = 'Include HoTs in healing prediction',
-				width = 'full',
-				get = function() return HCCdb.global.showHots end,
-				set = function(_, value) HCCdb.global.showHots = value end,
-			},
-			timeframe = {
-				order = 12,
-				type = 'range',
-				name = 'Timeframe',
-				desc = 'How many seconds into the future to predict HoTs',
-				min = 3,
-				max = 23,
-				step = 1,
-				get = function() return HCCdb.global.timeframe end,
-				set = function(info,value) HCCdb.global.timeframe = value end,
-			},
-			spacer2 = {
-				order = 14,
-				type = 'description',
-				name = '\n',
-			},
-			header2 = {
-				order = 16,
-				type = 'header',
-				name = 'Color Options',
-			},
-			desc1 = {
-				order = 17,
-				type = 'description',
-				name = 'Note: The plus and minus slider sets transparency.'
-			},
-			healColor = { 
-				order = 18,
-				type = 'color',
-				name = 'Heal Color',
-				hasAlpha = true,
-				width = 'full',
-				get = function() return unpack(HCCdb.global.healColor) end,
-				set = function (_, r, g, b, a) HCCdb.global.healColor = {r,g,b,a}; self:UpdateColors() end,
-			},
-			spacer3 = {
-				order = 20,
-				type = 'description',
-				name = '\n',
-			},
-			seperateHot = {
-				order = 22,
-				type = 'toggle',
-				name = 'Seperate HoT Color',
-				desc = 'Color HoTs as a seperate color.\n\'Show HoTs\' must be enabled.',
-				width = 'full',
-				get = function() return HCCdb.global.seperateHots end,
-				set = function(_, value) HCCdb.global.seperateHots = value end,
-			},
-			hotColor = { 
-				order = 24,
-				type = 'color',
-				name = 'HoT Color',
-				hasAlpha = true,
-				width = 'full',
-				get = function() return unpack(HCCdb.global.hotColor) end,
-				set = function (_,r, g, b, a) HCCdb.global.hotColor = {r,g,b,a}; self:UpdateColors() end,
-			},
-		},
-	}
-	options.args['statusText'] = {
-		name = 'Status Text',
-		type = 'group',
-		order = 2,
-		args = {
-			header0 = {
-				order = 0,
-				type = 'header',
-				name = 'General Settings',
-			},
-			feignToggle = {
-				order = 2,
-				type = 'toggle',
-				name = 'Feign death indicator',
-				descStyle = 'inline',
-				desc = 'Shows the text \'FEIGN\' instead of \'DEAD\' when a hunter feigns death.',
-				width = 'full',
-				get = function() return HCCdb.global.feignIndicator end,
-				set = function(_, value) HCCdb.global.feignIndicator = value end,
-			},
-			spacer = {
-				order = 3,
-				type = 'description',
-				name = '\n',
-			},
-			desc1 = {
-				order = 4,
-				type = 'header',
-				name = 'Health Text Replacers',
-			},
-			desc2 = {
-				order = 6,
-				type = 'description',
-				name = 'These options replace the functionality of \'Display Health Text\' in Blizzard\'s Raid Profiles.\n\n',
-			},
-			predictiveHealthLostToggle = {
-				order = 8,
-				type = 'toggle',
-				name = 'Predictive \'Health Lost\'',
-				desc = 'Shows the amount of health missing after all shown heals go off. \nThis replaces the \'Health Lost\' option.',
-				descStyle = 'inline',
-				width = 'full',
-				get = function() return HCCdb.global.predictiveHealthLost end,
-				set = function(_, value) HCCdb.global.predictiveHealthLost = value end,
-			},
-			continued = {
-				order = 20,
-				type = 'description',
-				name = '\n\nMore options will be added in the future.',
-			}
-		},
-	}
-	options.args['misc']={
-		name = 'Miscellaneous',
-		type = 'group',
-		order = 4,
-		args = {
-			header0 = {
-				order = 0,
-				type = 'header',
-				name = 'General Settings',
-			},
-			fastUpdate = {
-				order = 2,
-				type = 'toggle',
-				name = 'Fast Raid Health Update',
-				desc = 'Adds extra health updates every second.\nMay impact framerate on low end machines.',
-				descStyle = 'inline',
-				width = 'full',
-				get = function() return HCCdb.global.fastUpdate end,
-				set = function(_, value) HCCdb.global.fastUpdate = value; C_Timer.After(HCCdb.global.fastUpdateDuration, HealCommClassic.UpdateHealthValuesLoop) end,
-			},
-		}
-	}
-
-	LibStub("AceConfig-3.0"):RegisterOptionsTable("HCCOptions", options)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("HCCOptions","HealCommClassic")
+	LibStub("AceConfig-3.0"):RegisterOptionsTable("AddonOptions", options)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("AddonOptions","HealCommClassic")
 end
 
 

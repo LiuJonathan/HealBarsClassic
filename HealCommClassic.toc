@@ -1,6 +1,7 @@
 ## Interface: 11304
+## Interface-BCC: 20501
 ## Title: HealCommClassic
-## SavedVariables: HealCommSettings=
+## SavedVariables: HealCommSettings
 
 #@no-lib-strip@
 libs\Ace3\LibStub\LibStub.lua
