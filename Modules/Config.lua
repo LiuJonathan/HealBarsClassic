@@ -10,12 +10,6 @@ function addon:CreateConfigs()
 		name = 'HealCommClassic Options',
 		type = 'group',
 		args = {
-			desc1 = {
-				order = 0,
-				type = 'description',
-				width = 2.5,
-				name = 'Version '..HealCommClassic.version,
-			},
 			button0 = {
 				order = 10,
 				type = 'execute',

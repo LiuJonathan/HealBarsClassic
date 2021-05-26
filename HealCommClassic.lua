@@ -29,9 +29,6 @@
 local libCHC = LibStub("LibHealComm-4.0", true)
 
 HealCommClassic = LibStub("AceAddon-3.0"):NewAddon("HealCommClassic")
---Remember to update version number!!
---Curseforge release starting from 1.1.7
-HealCommClassic.version = "1.3.3"
 
 --move initalization to doinit
 local healBarTable = {} --when init initalize heal bar type
@@ -119,7 +116,6 @@ function HealCommClassic:createHealBars(unitFrame)
 				, "IncHealBar"..unitFrame:GetName()..healType, unitFrame)
 			currentBarList[healType]:SetFrameStrata("LOW")
 			if(unitFrame:GetName() == 'FocusFrame') then
-				print('focusup')
 				currentBarList[healType]:SetFrameLevel(currentBarList[healType]:GetFrameLevel())
 			end
 			currentBarList[healType]:SetFrameLevel(currentBarList[healType]:GetFrameLevel()-1)
@@ -135,9 +131,7 @@ function HealCommClassic:UpdateGUIDHeals(GUID)
 	
 	for frameName, unitFrame in pairs(masterFrameTable) do
 		displayedUnit = HealCommClassic:GetFrameInfo(unitFrame)
-		print(displayedUnit)
 		if displayedUnit and UnitGUID(displayedUnit) == GUID then
-			print('Update for frame :'..unitFrame:GetName())
 			HealCommClassic:UpdateFrameHeals(unitFrame)
 			if unitFrame.statusText then
 				CompactUnitFrame_UpdateStatusText(unitFrame)
@@ -597,7 +591,6 @@ function HealCommClassic:UpdateIncoming(...)
 			currentHeals[targetGUID][healType] = amount	
 		end
 		
-		print('Heal update for '..targetGUID)
 		HealCommClassic:UpdateGUIDHeals(targetGUID)
 		
 
