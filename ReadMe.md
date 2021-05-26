@@ -1,5 +1,5 @@
-For those unfamiliar with github, click on the releases tab above the file list and download HealComm.zip. You can also click the green download button, but that is not guarenteed to be a stable version.
+v1.4.1
+Updated LibHealComm for TBC spell support
+Fixed a bug with pet frames
 
-This is an implementation of the HealComm library to work with Blizzard's unit frames in Classic WoW
-
-Original work by the creator of Luna Unit Frames. https://github.com/Aviana/LunaUnitFrames 
+Please continue to report any bugs so that I can fix them
