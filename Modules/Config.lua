@@ -1,12 +1,11 @@
-local addon = HealCommClassic
-
 --[[
 	Function: CreateConfigs
 	Purpose: Create and attach options page
 	Notes: 
 		For convenience, order is incremented in steps of two so new options can be squeezed between them.
 ]]--
-function HealCommClassic:CreateConfigs()
+local addon = HealCommClassic
+function addon:CreateConfigs()
 	local options = {
 		name = 'HealCommClassic Options',
 		type = 'group',

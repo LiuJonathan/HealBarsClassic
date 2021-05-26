@@ -33,16 +33,16 @@ HealCommClassic = LibStub("AceAddon-3.0"):NewAddon("HealCommClassic")
 --Curseforge release starting from 1.1.7
 HealCommClassic.version = "1.3.3"
 
+--move initalization to doinit
 local healBarTable = {} --when init initalize heal bar type
-local guidUnitFrameMap = {}
+local masterFrameTable = {}
 local healBarTypeList = {}
 local healBarColors = {}
 local healBarTypeOrder = {}
 local activeBarTypes = {['flat']={}, ['hot']={}}
 local currentHeals = {}
-healBarColors[activeBarTypes['flat']] = {1,1,1,1}
-healBarColors[activeBarTypes['hot']] = {1,1,1,1}
-healBarTypeOrder[1]=activeBarTypes['flat']
+healBarTypeOrder[1]='flat'
+healBarTypeOrder[2]='hot'
 HCCdb = {}
 
 
@@ -82,41 +82,46 @@ local HCCdefault = {
 }
 
 function HealCommClassic:getHealColor(healType)
-	return unpack(healBarColors[activeBarTypes[healType]])
+	return unpack(healBarColors[healType])
 end
 
 function HealCommClassic:CreateAllHealBars()
-	for unitFrame in ipairs(globalFrameList) do
+	for name,unitFrame in pairs(globalFrameList) do
 		HealCommClassic:createHealBars(unitFrame)
 	end
 
 end
 
 
+
 --[[x
 
 --]]
-function HealCommClassic:CreateHealBars(unitFrame)
-	if not unitFrame or not unitFrame.displayedUnit or not UnitGUID(unitFrame.displayedUnit)
-		or (unitFrame.isForbidden and unitFrame.isForbidden()) then return end
+function HealCommClassic:createHealBars(unitFrame)
+	local displayedUnit = HealCommClassic:GetFrameInfo(unitFrame)
+	if not unitFrame or not unitFrame:GetName() then return end
+	
+	if masterFrameTable[unitFrame:GetName()] then return end
+	
+	masterFrameTable[unitFrame:GetName()]=unitFrame
+	
 	if not healBarTable[unitFrame] then
 		healBarTable[unitFrame] = {}
 	end
 	local currentBarList = healBarTable[unitFrame]
-	local unitFrameList = guidUnitFrameMap[UnitGUID(unitFrame.displayedUnit)]
-	if not unitFrameList then 
-		unitFrameList = {}
-		guidUnitFrameMap[UnitGUID(unitFrame.displayedUnit)] = unitFrameList
-	end
-	table.insert(unitFrameList,unitFrame)
+
+
 	
 	
 	for healType, properties in pairs(activeBarTypes) do
-		
 		if not currentBarList[healType] then
 			currentBarList[healType] = CreateFrame("StatusBar"
-				, "IncHealBar"..unitFrame.displayedUnit..healType, unitFrame)
+				, "IncHealBar"..unitFrame:GetName()..healType, unitFrame)
 			currentBarList[healType]:SetFrameStrata("LOW")
+			if(unitFrame:GetName() == 'FocusFrame') then
+				print('focusup')
+				currentBarList[healType]:SetFrameLevel(currentBarList[healType]:GetFrameLevel())
+			end
 			currentBarList[healType]:SetFrameLevel(currentBarList[healType]:GetFrameLevel()-1)
 			currentBarList[healType]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
 			currentBarList[healType]:SetMinMaxValues(0, 1)
@@ -126,6 +131,44 @@ function HealCommClassic:CreateHealBars(unitFrame)
 	end
 end
 
+function HealCommClassic:UpdateGUIDHeals(GUID)
+	
+	for frameName, unitFrame in pairs(masterFrameTable) do
+		displayedUnit = HealCommClassic:GetFrameInfo(unitFrame)
+		print(displayedUnit)
+		if displayedUnit and UnitGUID(displayedUnit) == GUID then
+			print('Update for frame :'..unitFrame:GetName())
+			HealCommClassic:UpdateFrameHeals(unitFrame)
+			if unitFrame.statusText then
+				CompactUnitFrame_UpdateStatusText(unitFrame)
+			end
+		
+		end
+	
+	end 
+
+end
+
+function HealCommClassic:GetFrameInfo(unitFrame)
+	
+	if not unitFrame then return end
+	if unitFrame:GetName() == 'PlayerFrame' then
+		displayedUnit = 'player'
+		healthBar = unitFrame.healthbar
+	elseif unitFrame:GetName() == 'FocusFrame' then
+		displayedUnit = 'focus'
+		healthBar = unitFrame.healthbar	
+	elseif unitFrame:GetName() == 'TargetFrame' then
+		displayedUnit = 'target'
+		healthBar = unitFrame.healthbar
+	else	
+		displayedUnit = unitFrame.displayedUnit
+		healthBar = unitFrame.healthBar
+	end
+	return displayedUnit,healthBar
+
+end
+
 
 
 --[[x
@@ -133,63 +176,65 @@ end
 	Purpose: Updates heal bars for a single unit frame after a non-healing event
 --]]
 function HealCommClassic:UpdateFrameHeals(unitFrame)
+	
+	if not unitFrame then return end
+	
+	local displayedUnit, healthBar = HealCommClassic:GetFrameInfo(unitFrame)
+	if not healBarTable[unitFrame] or not displayedUnit or not UnitExists(displayedUnit) then return end
 
-	if not healBarTable[unitFrame] then return end
-	print('-------------')
-	print(unitFrame)
-	print(unitFrame.displayedUnit)
-	print(healBarTable[unitFrame])
-	print('-------------')
-	local healthBar = unitFrame.healthBar
-	local unit = unitFrame.displayedUnit
+	local unit = displayedUnit
 	local maxHealth= UnitHealthMax(unit)
 	local health= UnitHealth(unit)
-	local healthWidth=unitFrame:GetWidth() * (health / maxHealth)
+	local healthWidth=healthBar:GetWidth() * (health / maxHealth)
+	local maxWidth = healthBar:GetWidth() * ( 1 + (HCCdb.global.overhealPercent/100))
 	
 	local healWidthTotal = 0
-	local currentHealsForFrame = currentHeals[UnitGUID(unitFrame.displayedUnit)]
-
+	local currentHealsForFrame = currentHeals[UnitGUID(displayedUnit)]
+	
 	if currentHealsForFrame then
-	
-		for barType in ipairs(healBarTypeOrder) do
-	
-			local barFrame = healBarTable[barType]
-			
+		for index, barType in pairs(healBarTypeOrder) do
+			local barFrame = healBarTable[unitFrame][barType]
 			if barFrame then 
-			local amount = currentHealsForFrame[barType]
-			
-			if( amount and amount > 0 and (health < maxHealth or HCCdb.global.overhealPercent > 0 )) 
-					and healthBar:IsVisible() then
-				local healWidth
-				local maxWidth = healthBar:GetWidth() * (1+(HCCdb.global.overhealPercent/100))
-				
-				if healWidth + healWidthTotal + healWidth <= maxWidth then
-					healWidth = healthBar:GetWidth() * (amount / maxHealth)
-				elseif (healWidth + healWidthTotal) >= maxWidth  then
-					barFrame:Hide()
+				local amount = currentHealsForFrame[barType]
+				if amount and amount > 0 and (health < maxHealth or HCCdb.global.overhealPercent > 0 )
+						and healthBar:IsVisible() 
+						then
+					barFrame:Show()
+					local healWidth = healthBar:GetWidth() * (amount / maxHealth)
+					
+					if healthWidth + healWidthTotal + healWidth >= maxWidth then
+						healWidth = maxWidth - healthWidth - healWidthTotal
+						if healWidth <= 0 then
+							healWidth = 0
+						end
+					end
+					barFrame:SetSize(healWidth,healthBar:GetHeight())
+					barFrame:ClearAllPoints()
+					barFrame:SetPoint("TOPLEFT", healthBar, "TOPLEFT", healthWidth, 0)
+		
+					
+					healWidthTotal = healWidthTotal + healWidth
+					
 				else
-					healWidth = maxWidth - healWidthTotal
+					barFrame:Hide()
 				end
-				barFrame:SetWidth(incHealWidth)
-				
-				
-				barFrame:SetHeight(healthBar:GetHeight())
-				barFrame:ClearAllPoints()
-				barFrame:SetPoint("TOPLEFT", healthBar, "TOPLEFT", healthWidth, 0)
-			else
-				barFrame:Hide()
 			end
-			end
+		
 		
 		end
 	end
 end
-
+--[[
+local function RaidPullout_UpdateTargetHook(frame)
+		print(frame:GetName())
+end
+hooksecurefunc("RaidPullout_UpdateTarget", RaidPullout_UpdateTargetHook)
+--]]
 --[[x
-	Function: RaidPulloutButton_OnLoadHook
+	Function: RaidPullout_UpdateTarget
 	Purpose: Creates heal bars for raid members upon joining a raid
 ]]--
-local function RaidPulloutButton_OnLoadHook(unitFrame)
+local function RaidPullout_UpdateTargetHook(unitFrame)
 	HealCommClassic:CreateHealBars(_G(unitFrame:GetParent():GetName()))
 end
 
@@ -197,8 +242,8 @@ end
 	Function: UnitFrameHealthBar_OnValueChangedHook
 	Purpose: Updates unit frames when a unit's max health changes
 ]]--
-local function UnitFrameHealthBar_OnValueChangedHook(unitFrame)
-	HealCommClassic:UpdateFrameHeals(unitFrame)
+local function UnitFrameHealthBar_OnValueChangedHook(unitFrameHealthBar)
+	HealCommClassic:UpdateFrameHeals(unitFrameHealthBar:GetParent())
 end
 
 
@@ -206,9 +251,9 @@ end
 	Function: UnitFrameHealthBar_OnUpdateHook
 	Purpose: Updates unit frames when a unit's health changes
 ]]--
-local function UnitFrameHealthBar_OnUpdateHook(unitFrame)
-	if unitFrame.unit ~= "player" then return end
-	HealCommClassic:UpdateFrameHeals(self)
+local function UnitFrameHealthBar_OnUpdateHook(unitFrameHealthBar)
+	if unitFrameHealthBar.unit ~= "player" then return end
+	HealCommClassic:UpdateFrameHeals(unitFrameHealthBar:GetParent())
 end
 hooksecurefunc("UnitFrameHealthBar_OnUpdate", UnitFrameHealthBar_OnUpdateHook) -- This needs early hooking
 
@@ -238,7 +283,7 @@ end
 	Purpose: Create a new heal bar whenever any frame is assigned a new unit
 ]]--
 local function CompactUnitFrame_SetUnitHook(unitFrame)
-	HealCommClassic:CreateHealBars(unitFrame)
+	HealCommClassic:createHealBars(unitFrame)
 end
 hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This needs early hooking
 
@@ -300,13 +345,14 @@ function HealCommClassic:OnInitialize()
 		HealCommSettings=nil
 	end
 	HCCdb = LibStub("AceDB-3.0"):New("HealCommSettings", HCCdefault)
-	healColor=HCCdb.global.healColor 
-	hotColor=HCCdb.global.hotColor
+	
+	healBarColors['flat']=HCCdb.global.healColor
+	healBarColors['hot']=HCCdb.global.hotColor
 	
 
 	HealCommClassic:CreateAllHealBars()
 	HealCommClassic:CreateConfigs()
-	--hooksecurefunc("RaidPulloutButton_OnLoad", RaidPulloutButton_OnLoadHook)
+	--hooksecurefunc("RaidPullout_Update", RaidPullout_UpdateTargetHook)
 	hooksecurefunc("UnitFrameHealthBar_OnValueChanged", UnitFrameHealthBar_OnValueChangedHook)
 	hooksecurefunc("CompactUnitFrame_UpdateHealth", CompactUnitFrame_UpdateHealthHook)
 	hooksecurefunc("CompactUnitFrame_UpdateMaxHealth", CompactUnitFrame_UpdateMaxHealthHook)
@@ -317,6 +363,7 @@ function HealCommClassic:OnInitialize()
 	libCHC.RegisterCallback(HealCommClassic, "HealComm_HealUpdated")
 	libCHC.RegisterCallback(HealCommClassic, "HealComm_ModifierChanged")
 	libCHC.RegisterCallback(HealCommClassic, "HealComm_GUIDDisappeared")
+		
 end
 
 --[[x
@@ -324,7 +371,7 @@ end
 	Purpose: Update the color of all heal bars
 ]]--
 function HealCommClassic:UpdateColors()
-	for unitFrame, barTable in pairs(healBars) do
+	for unitFrame, barTable in pairs(healBarTable) do
 	
 		for barType in ipairs(activeBarTypes) do
 			local barFrame = barTable[barType]
@@ -532,32 +579,28 @@ function HealCommClassic:UpdateIncoming(...)
 		healType = libCHC.CASTED_HEALS
 	end
 	for i=1, select("#", ...) do
-		local amount,hotAmount
+		local amountTable = {}
 		targetGUID = select(i, ...)
-		amount = (libCHC:GetHealAmount(targetGUID, healType, nil) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
+		amountTable['flat'] = (libCHC:GetHealAmount(targetGUID, healType, nil) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
 		if HCCdb.global.seperateHots and HCCdb.global.showHots then
-			hotAmount= (libCHC:GetHealAmount(targetGUID, hotType, GetTime()+HCCdb.global.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
+			amountTable['hot']= (libCHC:GetHealAmount(targetGUID, hotType, GetTime()+HCCdb.global.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
 		end
-		print('heal amount = '..amount+hotAmount)
-		if not currentHeals[targetGUID] then
-			currentHeals[targetGUID] = {}
-		end
-		if not currentHeals[targetGUID][activeBarTypes['flat']] then
-			currentHeals[targetGUID][activeBarTypes['flat']] = {}
-		end
-		currentHeals[targetGUID][activeBarTypes['flat']] = amount + hotAmount
 		
-		local guidHealBarList = guidUnitFrameMap[targetGUID]
-		if guidHealBarList then
-			
-			for unitFrame in ipairs(guidUnitFrameMap) do
-			
-				HealCommClassic:UpdateFrameHeals(unitFrame)
-				CompactUnitFrame_UpdateStatusText(unitFrame)
-			
+		--Todo refactor
+		for healType, amount in pairs(amountTable) do
+			if not currentHeals[targetGUID] then
+				currentHeals[targetGUID] = {}
 			end
-		
+			if not currentHeals[targetGUID][healType] then
+				currentHeals[targetGUID][healType] = {}
+			end
+			currentHeals[targetGUID][healType] = amount	
 		end
+		
+		print('Heal update for '..targetGUID)
+		HealCommClassic:UpdateGUIDHeals(targetGUID)
+		
+
 	end
 
 end

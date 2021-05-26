@@ -1,5 +1,4 @@
 ## Interface: 11304
-## Interface-BCC: 20501
 ## Title: HealCommClassic
 ## SavedVariables: HealCommSettings
 
@@ -14,3 +13,4 @@ libs\Ace-3.0\AceDB-3.0\AceDB-3.0.xml
 #@end-no-lib-strip@
 
 HealCommClassic.lua
+modules\Config.lua
