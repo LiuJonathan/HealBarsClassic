@@ -3,4 +3,8 @@ externals:
     libs/Ace-3.0:
         url: https://repos.curseforge.com/wow/ace3/trunk
     libs/LibHealComm-4.0:
+<<<<<<< Updated upstream
         url: git.wowace.com/wow/libhealcomm-4-0/mainline.git
+=======
+        url: https://github.com/Azilroka/LibHealComm-4.0
+>>>>>>> Stashed changes

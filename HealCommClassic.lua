@@ -74,6 +74,89 @@ local HCCdefault = {
 
 local HCCdb = {}
 
+<<<<<<< Updated upstream
+=======
+end
+
+function HealCommClassic:GetFrameInfo(unitFrame)
+	
+	if not unitFrame then return end
+	if unitFrame:GetName() == 'PlayerFrame' then
+		displayedUnit = 'player'
+		healthBar = unitFrame.healthbar
+	elseif unitFrame:GetName() == 'FocusFrame' then
+		displayedUnit = 'focus'
+		healthBar = unitFrame.healthbar	
+	elseif unitFrame:GetName() == 'TargetFrame' then
+		displayedUnit = 'target'
+		healthBar = unitFrame.healthbar
+	elseif unitFrame:GetName() == 'PetFrame' then
+		displayedUnit = 'pet'
+		healthBar = unitFrame.healthbar
+	else	
+		displayedUnit = unitFrame.displayedUnit
+		healthBar = unitFrame.healthBar
+	end
+	return displayedUnit,healthBar
+
+end
+
+
+
+--[[x
+	Function: UpdateFrame
+	Purpose: Updates heal bars for a single unit frame after a non-healing event
+--]]
+function HealCommClassic:UpdateFrameHeals(unitFrame)
+	
+	if not unitFrame then return end
+	
+	local displayedUnit, healthBar = HealCommClassic:GetFrameInfo(unitFrame)
+	if not healBarTable[unitFrame] or not displayedUnit or not UnitExists(displayedUnit) then return end
+
+	local unit = displayedUnit
+	local maxHealth= UnitHealthMax(unit)
+	local health= UnitHealth(unit)
+	local healthWidth=healthBar:GetWidth() * (health / maxHealth)
+	local maxWidth = healthBar:GetWidth() * ( 1 + (HCCdb.global.overhealPercent/100))
+	
+	local healWidthTotal = 0
+	local currentHealsForFrame = currentHeals[UnitGUID(displayedUnit)]
+	
+	if currentHealsForFrame then
+		for index, barType in pairs(healBarTypeOrder) do
+			local barFrame = healBarTable[unitFrame][barType]
+			if barFrame then 
+				local amount = currentHealsForFrame[barType]
+				if amount and amount > 0 and (health < maxHealth or HCCdb.global.overhealPercent > 0 )
+						and healthBar:IsVisible() 
+						then
+					barFrame:Show()
+					local healWidth = healthBar:GetWidth() * (amount / maxHealth)
+					
+					if healthWidth + healWidthTotal + healWidth >= maxWidth then
+						healWidth = maxWidth - healthWidth - healWidthTotal
+						if healWidth <= 0 then
+							healWidth = 0
+						end
+					end
+					barFrame:SetSize(healWidth,healthBar:GetHeight())
+					barFrame:ClearAllPoints()
+					barFrame:SetPoint("TOPLEFT", healthBar, "TOPLEFT", healthWidth, 0)
+		
+					
+					healWidthTotal = healWidthTotal + healWidth
+					
+				else
+					barFrame:Hide()
+				end
+			end
+		
+		
+		end
+	end
+end
+>>>>>>> Stashed changes
 --[[
 	Function: RaidPulloutButton_OnLoadHook
 	Purpose: Creates heal bars for raid members upon joining a raid
