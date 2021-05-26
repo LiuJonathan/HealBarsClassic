@@ -436,8 +436,8 @@ function HealCommClassic:UNIT_PET(unit)
 	if UnitExists(petunit) then
 		partyGUIDs[UnitGUID(petunit)] = petunit
 	end
-	if hpBars[globalFrameList[petunit].bar]then
-		self:UpdateFrame(globalFrameList[petunit].bar, petunit, currentHeals[UnitGUID("pet")] or 0, currentHots[UnitGUID("pet")] or 0)
+	if petunit and globalFrameList[petunit] then
+		HealCommClassic:UpdateFrameHeals(globalFrameList[petunit])
 	end
 end
 
