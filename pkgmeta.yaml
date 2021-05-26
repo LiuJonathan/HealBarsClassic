@@ -6,5 +6,5 @@ externals:
         url: https://github.com/Azilroka/LibHealComm-4.0
 
 manual-changelog:
-  filename: CHANGELOG.md
-  markup-type: markdown
+    filename: CHANGELOG.md
+    markup-type: markdown
