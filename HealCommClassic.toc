@@ -1,4 +1,5 @@
 ## Interface: 11304
+## Interface-BCC: 20501
 ## Title: HealCommClassic
 ## SavedVariables: HealCommSettings
 
