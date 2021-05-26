@@ -3,4 +3,4 @@ externals:
     libs/Ace-3.0:
         url: https://repos.wowace.com/wow/ace3/trunk
     libs/LibHealComm-4.0:
-        url: https://repos.wowace.com/wow/libhealcomm-4-0
+        url: https://github.com/Azilroka/LibHealComm-4.0
