@@ -1,15 +1,16 @@
 ## Interface: 11304
 ## Title: HealCommClassic
-## SavedVariables: HealCommSettings=
+## SavedVariables: HealCommSettings
 
 #@no-lib-strip@
-libs\Ace3\LibStub\LibStub.lua
-libs\Ace3\CallbackHandler-1.0\CallbackHandler-1.0.xml
+libs\Ace-3.0\LibStub\LibStub.lua
+libs\Ace-3.0\CallbackHandler-1.0\CallbackHandler-1.0.xml
 libs\LibHealComm-4.0\LibHealComm-4.0.xml
-libs\Ace3\AceAddon-3.0\AceAddon-3.0.xml
-libs\Ace3\AceGUI-3.0\AceGUI-3.0.xml
-libs\Ace3\AceConfig-3.0\AceConfig-3.0.xml
-libs\Ace3\AceDB-3.0\AceDB-3.0.xml
+libs\Ace-3.0\AceAddon-3.0\AceAddon-3.0.xml
+libs\Ace-3.0\AceGUI-3.0\AceGUI-3.0.xml
+libs\Ace-3.0\AceConfig-3.0\AceConfig-3.0.xml
+libs\Ace-3.0\AceDB-3.0\AceDB-3.0.xml
 #@end-no-lib-strip@
 
 HealCommClassic.lua
+modules\Config.lua
