@@ -155,6 +155,9 @@ function HealCommClassic:GetFrameInfo(unitFrame)
 	elseif unitFrame:GetName() == 'TargetFrame' then
 		displayedUnit = 'target'
 		healthBar = unitFrame.healthbar
+	elseif unitFrame:GetName() == 'PetFrame' then
+		displayedUnit = 'pet'
+		healthBar = unitFrame.healthbar
 	else	
 		displayedUnit = unitFrame.displayedUnit
 		healthBar = unitFrame.healthBar
