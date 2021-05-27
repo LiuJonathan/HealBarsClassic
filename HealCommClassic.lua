@@ -94,7 +94,7 @@ end
 --[[x
 
 --]]
-function HealCommClassic:createHealBars(unitFrame)
+function HealCommClassic:createHealBars(unitFrame, textureType)
 	local displayedUnit = HealCommClassic:GetFrameInfo(unitFrame)
 	if not unitFrame or not unitFrame:GetName() then return end
 	
@@ -119,7 +119,11 @@ function HealCommClassic:createHealBars(unitFrame)
 				currentBarList[healType]:SetFrameLevel(currentBarList[healType]:GetFrameLevel())
 			end
 			currentBarList[healType]:SetFrameLevel(currentBarList[healType]:GetFrameLevel()-1)
-			currentBarList[healType]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+			if textureType == 'raid' then
+				currentBarList[healType]:SetStatusBarTexture("Interface\\RaidFrame\\Raid-Bar-Hp-Fill")
+			else 
+				currentBarList[healType]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+			end
 			currentBarList[healType]:SetMinMaxValues(0, 1)
 			currentBarList[healType]:SetValue(1)
 			currentBarList[healType]:SetStatusBarColor(HealCommClassic:getHealColor(healType))
@@ -232,7 +236,7 @@ hooksecurefunc("RaidPullout_UpdateTarget", RaidPullout_UpdateTargetHook)
 	Purpose: Creates heal bars for raid members upon joining a raid
 ]]--
 local function RaidPullout_UpdateTargetHook(unitFrame)
-	HealCommClassic:CreateHealBars(_G(unitFrame:GetParent():GetName()))
+	HealCommClassic:CreateHealBars(_G(unitFrame:GetParent():GetName()),'raid')
 end
 
 --[[x
@@ -280,7 +284,7 @@ end
 	Purpose: Create a new heal bar whenever any frame is assigned a new unit
 ]]--
 local function CompactUnitFrame_SetUnitHook(unitFrame)
-	HealCommClassic:createHealBars(unitFrame)
+	HealCommClassic:createHealBars(unitFrame,'raid')
 end
 hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This needs early hooking
 
@@ -573,7 +577,7 @@ function HealCommClassic:UpdateIncoming(...)
 	if HCCdb.global.showHots and not HCCdb.global.seperateHots then
 		healType = libCHC.ALL_HEALS
 	else
-		healType = libCHC.CASTED_HEALS
+		healType = bit.bor(libCHC.CASTED_HEALS,libCHC.BOMB_HEALS)
 	end
 	for i=1, select("#", ...) do
 		local amountTable = {}
@@ -583,7 +587,6 @@ function HealCommClassic:UpdateIncoming(...)
 			amountTable['hot']= (libCHC:GetHealAmount(targetGUID, hotType, GetTime()+HCCdb.global.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
 		end
 		
-		--Todo refactor
 		for healType, amount in pairs(amountTable) do
 			if not currentHeals[targetGUID] then
 				currentHeals[targetGUID] = {}
