@@ -1,5 +1,3 @@
-## Interface-Classic: 11304
-## Interface-BCC: 20501
 
 
 HealCommClassic.lua

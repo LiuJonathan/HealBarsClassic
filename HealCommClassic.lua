@@ -1,31 +1,3 @@
---[[
-	Table of contents, in order:
-		- *General settings
-		- RaidPulloutButton_OnLoadHook
-		- UnitFrameHealthBar_OnValueChangedHook
-		- UnitFrameHealthBar_OnUpdateHook
-		- CompactUnitFrame_UpdateHealthHook
-		- CompactUnitFrame_UpdateMaxHealthHook
-		- CompactUnitFrame_SetUnitHook
-		- CompactUnitFrame_UpdateStatusTextHook
-		- OnInitialize
-		- CreateBars
-		- UpdateColors
-		- UpdateHealthValuesLoop
-		- UNIT_PET
-		- PLAYER_TARGET_CHANGED
-		- PLAYER_ROLES_ASSIGNED
-		- HealComm_HealUpdated
-		- HealComm_HealStopped
-		- HealComm_ModifierChanged
-		- HealComm_GUIDDisappeared
-		- UpdateIncoming
-		- UpdateFrame
-		- CreateConfigs
-		- *Event registration
---]]
-
-
 local libCHC = LibStub("LibHealComm-4.0", true)
 
 HealCommClassic = LibStub("AceAddon-3.0"):NewAddon("HealCommClassic")
@@ -133,6 +105,13 @@ end
 
 function HealCommClassic:UpdateGUIDHeals(GUID)
 	
+	if partyGUIDs[targetGUID] then
+		if globalFrameList[partyGUIDs[targetGUID]] then
+			print('frame updated for party member')
+			HealCommClassic:UpdateFrameHeals(globalFrameList[partyGUIDs[targetGUID]])
+		end
+	end
+	
 	for frameName, unitFrame in pairs(masterFrameTable) do
 		displayedUnit = HealCommClassic:GetFrameInfo(unitFrame)
 		if displayedUnit and UnitGUID(displayedUnit) == GUID then
@@ -150,21 +129,13 @@ end
 function HealCommClassic:GetFrameInfo(unitFrame)
 	
 	if not unitFrame then return end
-	if unitFrame:GetName() == 'PlayerFrame' then
-		displayedUnit = 'player'
-		healthBar = unitFrame.healthbar
-	elseif unitFrame:GetName() == 'FocusFrame' then
-		displayedUnit = 'focus'
-		healthBar = unitFrame.healthbar	
-	elseif unitFrame:GetName() == 'TargetFrame' then
-		displayedUnit = 'target'
-		healthBar = unitFrame.healthbar
-	elseif unitFrame:GetName() == 'PetFrame' then
-		displayedUnit = 'pet'
-		healthBar = unitFrame.healthbar
-	else	
 		displayedUnit = unitFrame.displayedUnit
 		healthBar = unitFrame.healthBar
+	if displayedUnit == nil then 
+		displayedUnit = unitFrame.unit
+	end
+	if healthBar == nil then
+		healthBar = unitFrame.healthbar
 	end
 	return displayedUnit,healthBar
 
@@ -192,26 +163,27 @@ function HealCommClassic:UpdateFrameHeals(unitFrame)
 	local healWidthTotal = 0
 	local currentHealsForFrame = currentHeals[UnitGUID(displayedUnit)]
 	
-	if currentHealsForFrame then
-		for index, barType in pairs(healBarTypeOrder) do
-			local barFrame = healBarTable[unitFrame][barType]
-			if barFrame then 
+	for index, barType in pairs(healBarTypeOrder) do
+		local barFrame = healBarTable[unitFrame][barType]
+		if barFrame then 
+
+			if currentHealsForFrame then
 				local amount = currentHealsForFrame[barType]
 				if amount and amount > 0 and (health < maxHealth or HCCdb.global.overhealPercent > 0 )
 						and healthBar:IsVisible() 
-						then
+				then
 					barFrame:Show()
 					local healWidth = healthBar:GetWidth() * (amount / maxHealth)
 					
 					if healthWidth + healWidthTotal + healWidth >= maxWidth then
 						healWidth = maxWidth - healthWidth - healWidthTotal
 						if healWidth <= 0 then
-							healWidth = 0
+							barFrame:Hide()
 						end
 					end
 					barFrame:SetSize(healWidth,healthBar:GetHeight())
 					barFrame:ClearAllPoints()
-					barFrame:SetPoint("TOPLEFT", healthBar, "TOPLEFT", healthWidth, 0)
+					barFrame:SetPoint("TOPLEFT", healthBar, "TOPLEFT", healthWidth + healWidthTotal, 0)
 		
 					
 					healWidthTotal = healWidthTotal + healWidth
@@ -219,25 +191,19 @@ function HealCommClassic:UpdateFrameHeals(unitFrame)
 				else
 					barFrame:Hide()
 				end
+			else
+				barFrame:Hide()
 			end
-		
-		
 		end
+	
+	
 	end
 end
---[[
-local function RaidPullout_UpdateTargetHook(frame)
-		print(frame:GetName())
+
+local function UnitFrame_SetUnit(unitFrame)
+	HealCommClassic:UpdateFrameHeals(unitFrameHealthBar:GetParent())
 end
-hooksecurefunc("RaidPullout_UpdateTarget", RaidPullout_UpdateTargetHook)
---]]
---[[x
-	Function: RaidPullout_UpdateTarget
-	Purpose: Creates heal bars for raid members upon joining a raid
-]]--
-local function RaidPullout_UpdateTargetHook(unitFrame)
-	HealCommClassic:CreateHealBars(_G(unitFrame:GetParent():GetName()),'raid')
-end
+
 
 --[[x
 	Function: UnitFrameHealthBar_OnValueChangedHook
