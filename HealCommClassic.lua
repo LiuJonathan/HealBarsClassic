@@ -46,7 +46,7 @@ local HCCdefault = {
 		feignIndicator = true,
 		predictiveHealthLost = false,
 		fastUpdate = false,
-		fastUpdateDuration = 0.1, --10 updates per second
+		fastUpdateDuration = 0.03, --~30 updates per second
 	}
 }
 
@@ -142,7 +142,6 @@ function HealCommClassic:GetFrameInfo(unitFrame)
 end
 
 
-
 --[[x
 	Function: UpdateFrame
 	Purpose: Updates heal bars for a single unit frame after a non-healing event
@@ -200,8 +199,8 @@ function HealCommClassic:UpdateFrameHeals(unitFrame)
 	end
 end
 
-local function UnitFrame_SetUnit(unitFrame)
-	HealCommClassic:UpdateFrameHeals(unitFrameHealthBar:GetParent())
+local function UnitFrame_SetUnitHook(unitFrame)
+	HealCommClassic:UpdateFrameHeals(unitFrame)
 end
 
 
@@ -331,6 +330,9 @@ function HealCommClassic:OnInitialize()
 	libCHC.RegisterCallback(HealCommClassic, "HealComm_ModifierChanged")
 	libCHC.RegisterCallback(HealCommClassic, "HealComm_GUIDDisappeared")
 		
+		
+	C_Timer.After(HCCdb.global.fastUpdateDuration,HealCommClassic.UpdateHealthValuesLoop)
+		
 end
 
 --[[x
@@ -387,8 +389,8 @@ function HealCommClassic:UpdateHealthValuesLoop()
 				end
 			end
 		end
-		C_Timer.After(HCCdb.global.fastUpdateDuration,HealCommClassic.UpdateHealthValuesLoop)
 	end
+	C_Timer.After(HCCdb.global.fastUpdateDuration,HealCommClassic.UpdateHealthValuesLoop)
 end
 
 --[[`

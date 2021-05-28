@@ -132,6 +132,16 @@ function addon:CreateConfigs()
 		type = 'group',
 		order = 15,
 		args = {
+			header0 = {
+				order = 10,
+				type = 'header',
+				name = 'Advanced Settings',
+			},
+			spacer = {
+				order = 30,
+				type = 'description',
+				name = 'Check back in later versions for new features!',
+			}
 		}
 	}
 	options.args['statusText'] = {
@@ -185,6 +195,28 @@ function addon:CreateConfigs()
 				name = '\n\nMore options will be added in the future.',
 			}
 		},
+	}
+	options.args['misc']={
+		name = 'Miscellaneous',
+		type = 'group',
+		order = 30,
+		args = {
+			header0 = {
+				order = 10,
+				type = 'header',
+				name = 'General Settings',
+			},
+			fastUpdate = {
+				order = 20,
+				type = 'toggle',
+				name = 'Fast Raid Health Update',
+				desc = 'Adds extra health updates every second.\nMay impact framerate on low end machines.',
+				descStyle = 'inline',
+				width = 'full',
+				get = function() return HCCdb.global.fastUpdate end,
+				set = function(_, value) HCCdb.global.fastUpdate = value;  end,
+			},
+		}
 	}
 
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("HCCOptions", options)
