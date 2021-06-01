@@ -67,8 +67,7 @@ end
 
 --]]
 function HealCommClassic:createHealBars(unitFrame, textureType)
-	local displayedUnit = HealCommClassic:GetFrameInfo(unitFrame)
-	if not unitFrame or not unitFrame:GetName() then return end
+	if not unitFrame or unitFrame:IsForbidden() or not unitFrame:GetName() then return end
 	
 	if masterFrameTable[unitFrame:GetName()] then return end
 	
@@ -107,7 +106,6 @@ function HealCommClassic:UpdateGUIDHeals(GUID)
 	
 	if partyGUIDs[targetGUID] then
 		if globalFrameList[partyGUIDs[targetGUID]] then
-			print('frame updated for party member')
 			HealCommClassic:UpdateFrameHeals(globalFrameList[partyGUIDs[targetGUID]])
 		end
 	end
