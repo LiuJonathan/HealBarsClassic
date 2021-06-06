@@ -4,10 +4,10 @@
 	Notes: 
 		For convenience, order is incremented in steps of two so new options can be squeezed between them.
 ]]--
-local addon = HealCommClassic
+local addon = HealBarsClassic
 function addon:CreateConfigs()
 	local options = {
-		name = 'HealCommClassic Options',
+		name = 'HealBarsClassic',
 		type = 'group',
 		args = {
 			button0 = {
@@ -15,13 +15,13 @@ function addon:CreateConfigs()
 				type = 'execute',
 				name = 'Reset to defaults',
 				confirm = true,
-				func = function() HCCdb:ResetDB() end
+				func = function() HBCdb:ResetDB() end
 			},
 			desc2 = {
 				order = 20,
 				type = 'description',
 				width = 'full',
-				name = 'HealCommClassic is an implementation of HealComm (LibHealComm) for Blizzard\'s raid frames'
+				name = 'HealBarsClassic provides HealComm for Blizzard\'s default unit frames.'
 			},
 		},
 	}
@@ -39,13 +39,29 @@ function addon:CreateConfigs()
 				order = 30,
 				type = 'range',
 				name = 'Extend Overheals',
-				desc = 'How far heals can extend on overhealing, in percentage of the health bar size',
+				desc = 'How far to extend overheals, in percentage of the health bar size',
 				min = 0,
 				max = 0.5,
 				step = 0.01,
 				isPercent = true,
-				get = function() return HCCdb.global.overhealPercent / 100 end,
-				set = function(_,value) HCCdb.global.overhealPercent = value * 100 end,
+				get = function() return HBCdb.global.overhealPercent / 100 end,
+				set = function(_,value) HBCdb.global.overhealPercent = value * 100 end,
+			},
+			spacer0 = {
+				order = 34,
+				type = 'description',
+				name = '\n',
+			},
+			healTimeframe = {
+				order = 35,
+				type = 'range',
+				name = 'Heal Timeframe',
+				desc = 'How many seconds into the future to predict Heals',
+				min = 3,
+				max = 23,
+				step = 1,
+				get = function() return HBCdb.global.healTimeframe end,
+				set = function(info,value) HBCdb.global.healTimeframe = value end,
 			},
 			spacer1 = {
 				order = 40,
@@ -63,19 +79,19 @@ function addon:CreateConfigs()
 				name = 'Show HoTs',
 				desc = 'Include HoTs in healing prediction',
 				width = 'full',
-				get = function() return HCCdb.global.showHots end,
-				set = function(_, value) HCCdb.global.showHots = value end,
+				get = function() return HBCdb.global.showHots end,
+				set = function(_, value) HBCdb.global.showHots = value end,
 			},
 			timeframe = {
 				order = 70,
 				type = 'range',
-				name = 'Timeframe',
+				name = 'HoT Timeframe',
 				desc = 'How many seconds into the future to predict HoTs',
 				min = 3,
 				max = 23,
 				step = 1,
-				get = function() return HCCdb.global.timeframe end,
-				set = function(info,value) HCCdb.global.timeframe = value end,
+				get = function() return HBCdb.global.timeframe end,
+				set = function(info,value) HBCdb.global.timeframe = value end,
 			},
 			spacer2 = {
 				order = 80,
@@ -98,8 +114,8 @@ function addon:CreateConfigs()
 				name = 'Heal Color',
 				hasAlpha = true,
 				width = 'full',
-				get = function() return unpack(HCCdb.global.healColor) end,
-				set = function (_, r, g, b, a) HCCdb.global.healColor = {r,g,b,a}; self:UpdateColors() end,
+				get = function() return unpack(HBCdb.global.healColor) end,
+				set = function (_, r, g, b, a) HBCdb.global.healColor = {r,g,b,a}; self:UpdateColors() end,
 			},
 			spacer3 = {
 				order = 120,
@@ -112,8 +128,8 @@ function addon:CreateConfigs()
 				name = 'Seperate HoT Color',
 				desc = 'Color HoTs as a seperate color.\n\'Show HoTs\' must be enabled.',
 				width = 'full',
-				get = function() return HCCdb.global.seperateHots end,
-				set = function(_, value) HCCdb.global.seperateHots = value end,
+				get = function() return HBCdb.global.seperateHots end,
+				set = function(_, value) HBCdb.global.seperateHots = value end,
 			},
 			hotColor = { 
 				order = 140,
@@ -121,8 +137,8 @@ function addon:CreateConfigs()
 				name = 'HoT Color',
 				hasAlpha = true,
 				width = 'full',
-				get = function() return unpack(HCCdb.global.hotColor) end,
-				set = function (_,r, g, b, a) HCCdb.global.hotColor = {r,g,b,a}; self:UpdateColors() end,
+				get = function() return unpack(HBCdb.global.hotColor) end,
+				set = function (_,r, g, b, a) HBCdb.global.hotColor = {r,g,b,a}; self:UpdateColors() end,
 			},
 		},
 	}
@@ -159,10 +175,10 @@ function addon:CreateConfigs()
 				type = 'toggle',
 				name = 'Feign death indicator',
 				descStyle = 'inline',
-				desc = 'Shows the text \'FEIGN\' instead of \'DEAD\' when a hunter feigns death.',
+				desc = 'Shows the text \'FEIGN\' when a hunter feigns death.',
 				width = 'full',
-				get = function() return HCCdb.global.feignIndicator end,
-				set = function(_, value) HCCdb.global.feignIndicator = value end,
+				get = function() return HBCdb.global.feignIndicator end,
+				set = function(_, value) HBCdb.global.feignIndicator = value end,
 			},
 			spacer = {
 				order = 30,
@@ -177,22 +193,22 @@ function addon:CreateConfigs()
 			desc2 = {
 				order = 50,
 				type = 'description',
-				name = 'These options replace the functionality of \'Display Health Text\' in Blizzard\'s Raid Profiles.\n\n',
+				name = 'These options supplement the functionality of \'Display Health Text\' in Blizzard\'s Raid Profiles.\n\n',
 			},
 			predictiveHealthLostToggle = {
 				order = 60,
 				type = 'toggle',
 				name = 'Predictive \'Health Lost\'',
-				desc = 'Shows the amount of health missing after all shown heals go off. \nThis replaces the \'Health Lost\' option.',
+				desc = 'Shows the amount of health missing after all shown heals go off. \nTo use this, set the \'Health Lost\' option in your Raid Profile.\n\n',
 				descStyle = 'inline',
 				width = 'full',
-				get = function() return HCCdb.global.predictiveHealthLost end,
-				set = function(_, value) HCCdb.global.predictiveHealthLost = value end,
+				get = function() return HBCdb.global.predictiveHealthLost end,
+				set = function(_, value) HBCdb.global.predictiveHealthLost = value end,
 			},
 			continued = {
 				order = 100,
 				type = 'description',
-				name = '\n\nMore options will be added in the future.',
+				name = 'More options will be added in the future.',
 			}
 		},
 	}
@@ -213,12 +229,12 @@ function addon:CreateConfigs()
 				desc = 'Adds extra health updates every second.\nMay impact framerate on low end machines.',
 				descStyle = 'inline',
 				width = 'full',
-				get = function() return HCCdb.global.fastUpdate end,
-				set = function(_, value) HCCdb.global.fastUpdate = value;  end,
+				get = function() return HBCdb.global.fastUpdate end,
+				set = function(_, value) HBCdb.global.fastUpdate = value;  end,
 			},
 		}
 	}
 
-	LibStub("AceConfig-3.0"):RegisterOptionsTable("HCCOptions", options)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("HCCOptions","HealCommClassic")
+	LibStub("AceConfig-3.0"):RegisterOptionsTable("HBCOptions", options)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("HBCOptions","HealBarsClassic")
 end

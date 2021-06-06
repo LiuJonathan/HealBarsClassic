@@ -1,6 +1,6 @@
 ## Interface: 20501
-## Title: HealCommClassic
-## SavedVariables: HealCommSettings
+## Title: HealBarsClassic
+## SavedVariables: HealBarSettings
 
 #@no-lib-strip@
 libs\Ace-3.0\LibStub\LibStub.lua
@@ -12,5 +12,5 @@ libs\Ace-3.0\AceConfig-3.0\AceConfig-3.0.xml
 libs\Ace-3.0\AceDB-3.0\AceDB-3.0.xml
 #@end-no-lib-strip@
 
-HealCommClassic.lua
+HealBarsClassic.lua
 modules\Config.lua

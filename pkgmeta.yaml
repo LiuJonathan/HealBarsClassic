@@ -1,4 +1,4 @@
-package-as: HealCommClassic
+package-as: HealBarsClassic
 externals:
     libs/Ace-3.0:
         url: https://repos.wowace.com/wow/ace3/trunk
