@@ -57,9 +57,9 @@ function addon:CreateConfigs()
 				type = 'range',
 				name = 'Heal Timeframe',
 				desc = 'How many seconds into the future to predict Heals',
-				min = 3,
-				max = 23,
-				step = 1,
+				min = 1,
+				max = 8,
+				step = 0.5,
 				get = function() return HBCdb.global.healTimeframe end,
 				set = function(info,value) HBCdb.global.healTimeframe = value end,
 			},
@@ -129,7 +129,7 @@ function addon:CreateConfigs()
 				desc = 'Color HoTs as a seperate color.\n\'Show HoTs\' must be enabled.',
 				width = 'full',
 				get = function() return HBCdb.global.seperateHots end,
-				set = function(_, value) HBCdb.global.seperateHots = value end,
+				set = function(_, value) HBCdb.global.seperateHots = value; self:UpdateColors() end,
 			},
 			hotColor = { 
 				order = 140,
@@ -161,7 +161,7 @@ function addon:CreateConfigs()
 		}
 	}
 	options.args['statusText'] = {
-		name = 'Status Text',
+		name = 'Raid Status Text',
 		type = 'group',
 		order = 20,
 		args = {
@@ -173,27 +173,22 @@ function addon:CreateConfigs()
 			feignToggle = {
 				order = 20,
 				type = 'toggle',
-				name = 'Feign death indicator',
+				name = 'Defensive Spell Indicator',
 				descStyle = 'inline',
-				desc = 'Shows the text \'FEIGN\' when a hunter feigns death.',
+				desc = 'Displays text when certain defensive spells are used. \nCurrently supported spells:\n\n'..
+						'Divine Shield - DIVNESHLD\n' ..
+						'Divine Protection - DIVNEPROT\n' ..
+						'Blessing of Protection - BLESSPROT\n' ..
+						'Ice Block - ICEBLOCK'..
+						'(BETA) Please report any issues',
 				width = 'full',
-				get = function() return HBCdb.global.feignIndicator end,
-				set = function(_, value) HBCdb.global.feignIndicator = value end,
+				get = function() return HBCdb.global.defensiveIndicator end,
+				set = function(_, value) HBCdb.global.defensiveIndicator = value end,
 			},
 			spacer = {
 				order = 30,
 				type = 'description',
 				name = '\n',
-			},
-			desc1 = {
-				order = 40,
-				type = 'header',
-				name = 'Health Text Replacers',
-			},
-			desc2 = {
-				order = 50,
-				type = 'description',
-				name = 'These options supplement the functionality of \'Display Health Text\' in Blizzard\'s Raid Profiles.\n\n',
 			},
 			predictiveHealthLostToggle = {
 				order = 60,
