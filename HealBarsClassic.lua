@@ -1,13 +1,14 @@
 local libCHC = LibStub("LibHealComm-4.0", true)
 
 HealBarsClassic = LibStub("AceAddon-3.0"):NewAddon("HealBarsClassic")
+AceConfigDialog = LibStub("AceConfigDialog-3.0")
+AceConsole = LibStub("AceConsole-3.0")
 
 --move initalization to doinit
 local healBarTable = {} --when init initalize heal bar type
 local masterFrameTable = {}
 local invulGUIDs = {}
 local healBarTypeList = {}
-local healBarColors = {}
 local healBarTypeOrder = {}
 local activeBarTypes = {['flat']={}, ['hot']={}}
 local currentHeals = {}
@@ -39,8 +40,8 @@ local globalFrameList = {
 local HBCdefault = {
 	global = {
 		overhealPercent = 20,
-		timeframe = 4,
-		healTimeframe = 3,
+		timeframe = 3,
+		healTimeframe = 4,
 		showHots = true,
 		seperateHots = true,
 		healColor = {0, 1, 0, 1.0},
@@ -53,7 +54,15 @@ local HBCdefault = {
 }
 
 function HealBarsClassic:getHealColor(healType)
-	return unpack(healBarColors[healType])
+	local colorVarName, colorTable
+	if healType =='flat' then 
+		colorTable = HBCdb.global.healColor
+	else
+		colorTable = HBCdb.global.hotColor
+	end
+	if colorTable then 
+		return unpack(colorTable)
+	end
 end
 
 function HealBarsClassic:CreateAllHealBars()
@@ -255,10 +264,15 @@ end
 hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This needs early hooking
 
 local invulSpells = {
-	[1020] = {name = 'DIVNESHLD',duration = 12} -- Divine Shield
-	, [1022] = {name = 'BLESSPROT',duration = 6} -- Blessing of Protection
-	, [498] = {name = 'DIVNEPROT',duration = 6} -- Divine Protection
-	, [45438] = {name = 'ICEBLOCK',duration = 10} -- Ice Block
+	[642] = {name = 'DIVSHLD',duration = 12} -- Divine Shield Rank 1
+	, [1020] = {name = 'DIVSHLD',duration = 12} -- Divine Shield Rank 2
+	, [1022] = {name = 'BLSPROT',duration = 6} -- Blessing of Protection Rank 1
+	, [5599] = {name = 'BLSPROT',duration = 6} -- Blessing of Protection Rank 2
+	, [10278] = {name = 'BLSPROT',duration = 6} -- Blessing of Protection Rank 3
+	, [498] = {name = 'DIVPROT',duration = 6} -- Divine Protection Rank 1
+	, [5573] = {name = 'DIVPROT',duration = 6} -- Divine Protection Rank 2
+	, [19752] = {name = 'DIVINTR',duration = 6} -- Divine Intervention
+	, [45438] = {name = 'ICEBLCK',duration = 10} -- Ice Block
 	--, [5384] = {name = 'FEIGN',duration = 30} -- Feign Death
 	} 
 	
@@ -337,13 +351,11 @@ end
 function HealBarsClassic:OnInitialize()
 
 	HBCdb = LibStub("AceDB-3.0"):New("HealBarSettings", HBCdefault)
-	
-	healBarColors['flat']=HBCdb.global.healColor
-	healBarColors['hot']=HBCdb.global.hotColor
-	
+	HBCdb.RegisterCallback(HealBarsClassic, "OnProfileChanged", "UpdateColors")
 
 	HealBarsClassic:CreateAllHealBars()
 	HealBarsClassic:CreateConfigs()
+	HealBarsClassic:RegisterChatCommands()
 	--hooksecurefunc("RaidPullout_Update", RaidPullout_UpdateTargetHook)
 	hooksecurefunc("UnitFrameHealthBar_OnValueChanged", UnitFrameHealthBar_OnValueChangedHook)
 	hooksecurefunc("CompactUnitFrame_UpdateHealth", CompactUnitFrame_UpdateHealthHook)
@@ -355,10 +367,45 @@ function HealBarsClassic:OnInitialize()
 	libCHC.RegisterCallback(HealBarsClassic, "HealComm_HealUpdated")
 	libCHC.RegisterCallback(HealBarsClassic, "HealComm_ModifierChanged")
 	libCHC.RegisterCallback(HealBarsClassic, "HealComm_GUIDDisappeared")
-		
+			
+	AceConsole:RegisterChatCommand(
+		'hbc'
+		,function(args) HealBarsClassic:ChatCommand(args) end)
+	AceConsole:RegisterChatCommand(
+		'HealBarsClassic'
+		,function(args) HealBarsClassic:ChatCommand(args) end)
 		
 	C_Timer.After(HBCdb.global.fastUpdateDuration,HealBarsClassic.UpdateHealthValuesLoop)
 		
+end
+
+function HealBarsClassic:ChatCommand(args)
+	if args ~= nil then 
+		arg = AceConsole:GetArgs(args,1)
+	end
+	if arg == nil then
+		AceConfigDialog:Open('HBCOptions') 
+	elseif arg == 'rc' then
+		AceConsole:Print('|c42f581FFHealBarsClassic|r - These players have a compatible healing addon:\n')
+		local nameSet = {}
+		for frameName, unitFrame in pairs(masterFrameTable) do
+			displayedUnit = HealBarsClassic:GetFrameInfo(unitFrame)
+			if displayedUnit and UnitGUID(displayedUnit) 
+				and libCHC:GUIDHasHealed(UnitGUID(displayedUnit)) then
+				nameSet[(UnitName(displayedUnit))] = true
+			end
+		
+		end 
+		for name,_ in pairs(nameSet) do
+			AceConsole:Print(name)
+		end
+	
+	
+	else
+		AceConsole:Print('|c42f581FFHealBarsClassic|r - /hbc /HealBarsClassic\n'..
+						'|c42f5daFF/hbc rc|r - Raid Check. Players only show if you\'ve seen them cast'..
+						' a heal since you\'ve last logged in. Cross-addon compatible.')
+	end
 end
 
 --[[x
@@ -366,12 +413,10 @@ end
 	Purpose: Update the color of all heal bars
 ]]--
 function HealBarsClassic:UpdateColors()
-	for unitFrame, barTable in pairs(healBarTable) do
-	
-		for barType in ipairs(activeBarTypes) do
-			local barFrame = barTable[barType]
-			barFrame:SetStatusBarColor(HealBarsClassic:getHealColor(healType))
-		
+
+	for unitFrame, unitFrameBars in pairs(healBarTable) do
+		for barType, barFrame in pairs(unitFrameBars) do
+			barFrame:SetStatusBarColor(HealBarsClassic:getHealColor(barType))
 		end
 	end
 end
@@ -420,12 +465,6 @@ function HealBarsClassic:UpdateHealthValuesLoop()
 	C_Timer.After(HBCdb.global.fastUpdateDuration,HealBarsClassic.UpdateHealthValuesLoop)
 end
 
---[[`
-	Function: UNIT_PET
-	Purpose: Update pet heal bars
-	Inputs: Unit
-		Where Unit is the UnitID of the pet being updated
-]]--
 function HealBarsClassic:UNIT_PET(unit)
 	if unit ~= "player" and strsub(unit,1,5) ~= "party" then return end
 	petunit = unit == "player" and "pet" or "partypet"..strsub(unit,6)
@@ -443,19 +482,10 @@ function HealBarsClassic:UNIT_PET(unit)
 	end
 end
 
---[[
-	Function: PLAYER_TARGET_CHANGED
-	Purpose: Update player target heal bars
-]]--
 function HealBarsClassic:PLAYER_TARGET_CHANGED(frame)
 	HealBarsClassic:UpdateFrameHeals(frame)
 end
 
-
---[[x
-	Function: PLAYER_ROLES_ASSIGNED
-	Purpose: Update party and raid heal bars after a raid role assignment
-]]--
 function HealBarsClassic:PLAYER_ROLES_ASSIGNED() 
 	local frame, unitFrame, num
 	for guid,unit in pairs(partyGUIDs) do
@@ -508,32 +538,19 @@ function HealBarsClassic:PLAYER_ROLES_ASSIGNED()
 	end
 end
 
-
---[[x
-	Function: HealBarsClassic_HealUpdated
-	Purpose: HealCommLib callback handler
-			Redirect callback
-	Inputs: event, casterGUID, spellID, healType, interrupted, args
-			Where event, casterGUID, spellID, etc. are non-functional
-			Where args is a table of GUIDs to update
---]]
 function HealBarsClassic:HealComm_HealUpdated(event, casterGUID, spellID, healType, endTime, ...)
-	if (endTime - GetTime()) > HBCdb.global.healTimeframe then
+	if (bit.band(healType,libCHC.CASTED_HEALS) > 0 or healType == libCHC.BOMB_HEALS) 
+		and (endTime - GetTime()) > HBCdb.global.healTimeframe then
 		self:UpdateIncoming(endTime - GetTime() - HBCdb.global.healTimeframe , ...)
+	--[[
+	elseif HBCdb.global.timeframe < 4 and healType == libCHC.HOT_HEALS then 
+		self:UpdateIncoming(0.5, ...)
+		--]]
 	else
 		self:UpdateIncoming(nil, ...)
 	end
 end
 
-
---[[x
-	Function: HealComm_HealStopped
-	Purpose: HealCommLib callback handler
-			Redirect callback
-	Inputs: event, casterGUID, spellID, healType, interrupted, args
-			Where event, casterGUID, spellID, etc. are non-functional
-			Where args is a table of GUIDs to update
---]]
 function HealBarsClassic:HealComm_HealStopped(event, casterGUID, spellID, healType, interrupted, ...)
 	self:UpdateIncoming(nil, ...)
 end
