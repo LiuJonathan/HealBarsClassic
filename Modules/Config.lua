@@ -4,10 +4,6 @@
 	Notes: 
 		For convenience, order is incremented in steps of two so new options can be squeezed between them.
 ]]--
-function HealBarsClassic:RegisterChatCommands()
-	--AceConsole:RegisterChatCommand('hbc 
-
-end
 function HealBarsClassic:CreateConfigs()
 	local options = {
 		name = 'HealBarsClassic',
@@ -87,7 +83,7 @@ function HealBarsClassic:CreateConfigs()
 				order = 160,
 				type = 'description',
 				name = 'Shows which players in the raid have any compatible heal prediction addon. '..
-						'Players only show if you\'ve seen them cast a heal since you\'ve last logged in.'		
+						'Players only show if you\'ve seen them cast a heal since they\'ve joined the raid.'		
 			}
 		},
 	}	
@@ -259,6 +255,6 @@ function HealBarsClassic:CreateConfigs()
 
 	
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("HBCOptions", options)
-	AceConfigDialog:AddToBlizOptions("HBCOptions","HealBarsClassic")
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("HBCOptions","HealBarsClassic")
 
 end

@@ -4,8 +4,7 @@ HealBarsClassic = LibStub("AceAddon-3.0"):NewAddon("HealBarsClassic")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local AceConsole = LibStub("AceConsole-3.0")
 
---move initalization to doinit
-local healBarTable = {} --when init initalize heal bar type
+local healBarTable = {} 
 local masterFrameTable = {}
 local invulGUIDs = {}
 local healBarTypeList = {}
@@ -69,14 +68,10 @@ function HealBarsClassic:CreateDefaultHealBars()
 	for name,unitFrame in pairs(globalFrameList) do
 		HealBarsClassic:createHealBars(unitFrame)
 	end
-
 end
 
 
 
---[[x
-
---]]
 function HealBarsClassic:createHealBars(unitFrame, textureType)
 	if not unitFrame or unitFrame:IsForbidden() or not unitFrame:GetName() then return end
 	
@@ -114,7 +109,7 @@ function HealBarsClassic:createHealBars(unitFrame, textureType)
 	
 	local eventFrame = CreateFrame("Frame","HealBarsClassicEventFrame"..unitFrame:GetName(), unitFrame)
 	eventFrame:SetScript("OnEvent",function(self) HealBarsClassic:UpdateFrameHeals(self:GetParent()) end)
-	HealBarsClassic:RegisterAllActiveFrames()
+
 end
 
 
@@ -131,7 +126,7 @@ function HealBarsClassic:UpdateGUIDHeals(GUID)
 		if displayedUnit and UnitGUID(displayedUnit) == GUID then
 			HealBarsClassic:UpdateFrameHeals(unitFrame)
 			if unitFrame.statusText then
-				CompactUnitFrame_UpdateStatusTextHBCHook(unitFrame)
+				CompactUnitFrame_UpdateStatusText(unitFrame)
 			end
 		
 		end
@@ -160,15 +155,16 @@ function HealBarsClassic:GetFrameInfo(unitFrame)
 end
 
 
---[[x
-	Function: UpdateFrame
-	Purpose: Updates heal bars for a single unit frame after a non-healing event
---]]
 function HealBarsClassic:UpdateFrameHeals(unitFrame)
-	
 	if not unitFrame then return end
 	local displayedUnit, healthBar = HealBarsClassic:GetFrameInfo(unitFrame)
 	if not displayedUnit or not UnitExists(displayedUnit) or not healBarTable[unitFrame] then return end
+	
+	local eventFrame = _G['HealBarsClassicEventFrame'..unitFrame:GetName()]
+	eventFrame:RegisterUnitEvent("UNIT_HEALTH",(HealBarsClassic:GetFrameInfo(unitFrame)))
+	eventFrame:RegisterUnitEvent("UNIT_MAXHEALTH",(HealBarsClassic:GetFrameInfo(unitFrame)))
+			
+	
 	
 	local unit = displayedUnit
 	local maxHealth= UnitHealthMax(unit)
@@ -216,13 +212,12 @@ function HealBarsClassic:UpdateFrameHeals(unitFrame)
 end
 
 local function UnitFrame_SetUnitHook(unitFrame)
+	HealBarsClassic:UnRegisterAllInactiveFrames()
 	HealBarsClassic:UpdateFrameHeals(unitFrame)
 end
 
---[[x
-	Function: CompactUnitFrame_SetUnitHook
-	Purpose: Create a new heal bar whenever any frame is assigned a new unit
-]]--
+hooksecurefunc("UnitFrame_SetUnit", UnitFrame_SetUnitHook) -- This needs early hooking
+
 local function CompactUnitFrame_SetUnitHook(unitFrame)
 	HealBarsClassic:createHealBars(unitFrame,'raid')
 end
@@ -238,17 +233,24 @@ local invulSpells = {
 	, [5573] = {name = 'DIVPROT',duration = 6} -- Divine Protection Rank 2
 	, [19752] = {name = 'DIVINTR',duration = 6} -- Divine Intervention
 	, [45438] = {name = 'ICEBLCK',duration = 10} -- Ice Block
+	--, [22812] = {name = 'BARKSKN',duration = 12} -- Ice Block
 	--, [5384] = {name = 'FEIGN',duration = 30} -- Feign Death
 	} 
 	
-function HealBarsClassic:COMBAT_LOG_EVENT_UNFILTERED(timestamp, eventType, hideCaster, sourceGUID, sourceName
-													, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags, ...)
+function HealBarsClassic:COMBAT_LOG_EVENT_UNFILTERED(...)
 	
 	if not HBCdb.global.defensiveIndicator or (not UnitInParty("player") and not UnitInRaid("player")) then return end
+	
+	local timestamp, eventType, hideCaster, sourceGUID, sourceName
+		, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags, spellId = CombatLogGetCurrentEventInfo()
 	if bit.band(sourceFlags,0x00000C00) ~= 0x00000400 then return end --check if caster is a player
-	if not eventType == 'SPELL_AURA_APPLIED' and not eventType == 'SPELL_AURA_REMOVED' then return end
-		
-	local spellId = select(1,...)
+	if not eventType == 'SPELL_AURA_APPLIED' 
+		and not eventType == 'SPELL_AURA_REMOVED'
+		and not eventType == 'SPELL_AURA_BROKEN'
+		and not eventType == 'SPELL_AURA_BROKEN_SPELL' 
+		and not eventType == 'UNIT_DIED'
+		and not eventType == 'UNIT_DESTROYED'
+		and not eventType == 'UNIT_DISSIPATES' then return end
 	local invulSpell = invulSpells[spellId]
 	
 	if not invulSpell then return end 
@@ -257,25 +259,25 @@ function HealBarsClassic:COMBAT_LOG_EVENT_UNFILTERED(timestamp, eventType, hideC
 	if eventType == 'SPELL_AURA_APPLIED' then 
 		invulGUIDs[invulGUID] = invulSpell.name
 		C_Timer.After(invulSpell.duration,function() 
-				if invulGUIDs[invulGUID] == name then
-					invulSpells[invulGUID] = nil
+				if invulGUIDs[invulGUID] == invulSpell.name then
+					invulGUIDs[invulGUID] = nil
 				end end) --fallback in case target moves out of combat log range
-	else
+	else --aura removed
 		invulGUIDs[invulGUID] = nil
 	end
 	
 	--blind update all frames to trigger status text updates. Inefficient but happens rarely
 	HealBarsClassic:UpdateGUIDHeals(invulGUID)
-	
-			
+
+		
 end
 
 function HealBarsClassic:GROUP_ROSTER_UPDATE()
-	HealBarsClassic:RegisterAllActiveFrames()
+	HealBarsClassic:UnRegisterAllInactiveFrames()
 
 end
 
-function HealBarsClassic:RegisterAllActiveFrames()
+function HealBarsClassic:UnRegisterAllInactiveFrames()
 
 	for frameName, unitFrame in pairs(masterFrameTable) do
 		local eventFrame = _G['HealBarsClassicEventFrame'..frameName]
@@ -283,10 +285,6 @@ function HealBarsClassic:RegisterAllActiveFrames()
 			local displayedUnit = HealBarsClassic:GetFrameInfo(unitFrame)
 			if frameName ~= 'target' and frameName ~= 'player' and frameName ~= 'focus' then 
 				eventFrame:UnregisterAllEvents()
-			end
-			if displayedUnit and UnitGUID(displayedUnit) and unitFrame:IsVisible() then
-				eventFrame:RegisterUnitEvent("UNIT_HEALTH",(HealBarsClassic:GetFrameInfo(unitFrame)))
-				eventFrame:RegisterUnitEvent("UNIT_MAXHEALTH",(HealBarsClassic:GetFrameInfo(unitFrame)))
 			end
 		end
 	end
@@ -297,6 +295,8 @@ function CompactUnitFrame_UpdateStatusTextHBCHook(unitFrame)
 		or not UnitIsConnected(unitFrame.displayedUnit) or UnitIsDeadOrGhost(unitFrame.displayedUnit) then return end
 	
 
+	local healthLost = UnitHealthMax(unitFrame.displayedUnit) - UnitHealth(unitFrame.displayedUnit)
+		
 	if HBCdb.global.defensiveIndicator then
 		local guid = UnitGUID(unitFrame.displayedUnit)
 		local invulGUID = invulGUIDs[guid]
@@ -315,7 +315,6 @@ function CompactUnitFrame_UpdateStatusTextHBCHook(unitFrame)
 		for healType, amount in pairs(currentHeals) do
 			totalHeals = totalHeals + amount
 		end
-		local healthLost = UnitHealthMax(unitFrame.displayedUnit) - UnitHealth(unitFrame.displayedUnit)
 		local healthDelta = totalHeals - healthLost
 		
 		if healthDelta >= 0 then
@@ -327,10 +326,6 @@ function CompactUnitFrame_UpdateStatusTextHBCHook(unitFrame)
 	end 
 end
 
---[[
-	Function: OnInitialize
-	Purpose: Initalize necessary functions, variables and set hooks, callbacks
-]]--
 function HealBarsClassic:OnInitialize()
 	HBCdb = LibStub("AceDB-3.0"):New("HealBarSettings", HBCdefault)
 	HBCdb.RegisterCallback(HealBarsClassic, "OnProfileChanged", "UpdateColors")
@@ -351,7 +346,6 @@ function HealBarsClassic:OnInitialize()
 		,function(args) HealBarsClassic:ChatCommand(args) end)
 		
 	C_Timer.After(HBCdb.global.fastUpdateDuration,HealBarsClassic.UpdateHealthValuesLoop)
-		
 end
 
 function HealBarsClassic:ChatCommand(args)
@@ -361,7 +355,7 @@ function HealBarsClassic:ChatCommand(args)
 	if arg == nil then
 		AceConfigDialog:Open('HBCOptions') 
 	elseif arg == 'rc' then
-		AceConsole:Print('|c42f581FFHealBarsClassic|r - These players have a compatible healing addon:\n')
+		AceConsole:Print('|c42f581FFHealBarsClassic|r - These players have casted a heal while using a compatible healing addon:\n')
 		local nameSet = {}
 		for frameName, unitFrame in pairs(masterFrameTable) do
 			displayedUnit = HealBarsClassic:GetFrameInfo(unitFrame)
@@ -379,14 +373,10 @@ function HealBarsClassic:ChatCommand(args)
 	else
 		AceConsole:Print('|c42f581FFHealBarsClassic|r - /hbc /HealBarsClassic\n'..
 						'|c42f5daFF/hbc rc|r - Raid Check. Players only show if you\'ve seen them cast'..
-						' a heal since you\'ve last logged in. Cross-addon compatible.')
+						' a heal since they\'ve joined the raid. Cross-addon compatible.')
 	end
 end
 
---[[x
-	Function: UpdateColors
-	Purpose: Update the color of all heal bars
-]]--
 function HealBarsClassic:UpdateColors()
 
 	for unitFrame, unitFrameBars in pairs(healBarTable) do
@@ -396,11 +386,6 @@ function HealBarsClassic:UpdateColors()
 	end
 end
 
---[[
-	Function: UpdateHealthValuesLoop
-	Purpose: Force health and max health value update
-		Experimental - may not actually work
---]]
 function HealBarsClassic:UpdateHealthValuesLoop()
 	if HBCdb.global.fastUpdate and (UnitInParty("player") or UnitInRaid("player")) then
 		local unitFrame = _G["CompactRaidFrame1"]
@@ -442,27 +427,8 @@ function HealBarsClassic:UpdateHealthValuesLoop()
 	end
 end
 
-function HealBarsClassic:UNIT_PET(unit)
---[[
-	if unit ~= "player" and strsub(unit,1,5) ~= "party" then return end
-	local petunit = unit == "player" and "pet" or "partypet"..strsub(unit,6)
-	for guid,unit in pairs(partyGUIDs) do
-		if unit == petunit then
-			partyGUIDs[guid] = nil
-			break
-		end
-	end
-	if UnitExists(petunit) then
-		partyGUIDs[UnitGUID(petunit)] = petunit
-	end
-	if petunit and globalFrameList[petunit] then
-		HealBarsClassic:UpdateFrameHeals(globalFrameList[petunit])
-	end
-	--]]
-end
-
 function HealBarsClassic:PLAYER_TARGET_CHANGED(frame)
-	HealBarsClassic:UpdateFrameHeals(frame)
+	HealBarsClassic:UpdateFrameHeals(_G['TargetFrame'])
 end
 
 function HealBarsClassic:PLAYER_ROLES_ASSIGNED() 
@@ -536,37 +502,19 @@ function HealBarsClassic:HealComm_HealStopped(event, casterGUID, spellID, healTy
 end
 
 
---[[x
-	Function: HealComm_ModifierChanged
-	Purpose: HealCommLib callback handler
-			Redirect callback
-	Inputs: Event, GUID
-			Where Event is non-functional
-			Where GUID is the GUID to update
---]]
+
 function HealBarsClassic:HealComm_ModifierChanged(event, guid)
 	self:UpdateIncoming(nil, guid)
 end
 
 
---[[x
-	Function: HealComm_GUIDDisappeared
-	Purpose: Update heal bars after a GUID disappears from view
-	Inputs: Event, GUID
-			Where Event is non-functional
-			Where GUID is the GUID that disappeared
---]]
+
 function HealBarsClassic:HealComm_GUIDDisappeared(event, guid)
 	self:UpdateIncoming(nil,guid)
 end
 
 
---[[x
-	Function: UpdateIncoming
-	Purpose: Stores incoming healing information from healcomm library
-	Inputs: args
-			A table of GUIDs to update
---]]
+
 function HealBarsClassic:UpdateIncoming(callbackTime, ...)
 	local targetGUID, healType
 	local guidTable = {}
@@ -580,8 +528,23 @@ function HealBarsClassic:UpdateIncoming(callbackTime, ...)
 	for i=1, select("#", ...) do
 		local amountTable = {}
 		targetGUID = select(i, ...)
-		table.insert(guidTable, targetGUID) --repack data for callback
+		
+		--[[
+		--calc flat 
+		if HBCdb.global.showOwnHeal then
+			amountTable['flat'] = (libCHC:GetHealAmount(targetGUID, healType, GetTime() 
+				+ HBCdb.global.healTimeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
+		
+			--calc all flat
+			--calc own flat
+		--calc hot
+			--calc all hot
+			--calc own hot
+		--]]
+		
 		amountTable['flat'] = (libCHC:GetHealAmount(targetGUID, healType, GetTime() + HBCdb.global.healTimeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
+		
+		
 		if HBCdb.global.showHots then
 			local hotAmount = (libCHC:GetHealAmount(targetGUID, hotType, GetTime()+HBCdb.global.timeframe) or 0) * (libCHC:GetHealModifier(targetGUID) or 1)
 			if HBCdb.global.seperateHots then
@@ -603,12 +566,12 @@ function HealBarsClassic:UpdateIncoming(callbackTime, ...)
 		
 		HealBarsClassic:UpdateGUIDHeals(targetGUID)
 		
-		if callbackTime then
-			C_Timer.After(callbackTime, function()
-				HealBarsClassic:UpdateIncoming(nil, unpack(guidTable))
-				end)
-		end
 
+	end
+	if callbackTime then
+		C_Timer.After(callbackTime, function()
+			HealBarsClassic:UpdateIncoming(nil, unpack(arg))
+			end)
 	end
 
 end
@@ -616,22 +579,12 @@ end
 
 
 
---[[
-	Code section: Event Registration
-	Purpose: Set event to initalize HealBarsClassic on first login and 
-			update targets after target/pet/raid role change
---]]
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
 eventFrame:RegisterEvent("PLAYER_ROLES_ASSIGNED")
-eventFrame:RegisterEvent("UNIT_PET")
 eventFrame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 eventFrame:SetScript("OnEvent", function(self, event, ...)
-		if event == 'COMBAT_LOG_EVENT_UNFILTERED' then
-			HealBarsClassic[event](self, CombatLogGetCurrentEventInfo())
-		else
-			HealBarsClassic[event](self, ...)
-		end end)
+			HealBarsClassic[event](self, ...) end)
 
 
 --[[ End of "Event Registration" code section ]]--
