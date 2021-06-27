@@ -14,12 +14,12 @@ function HealBarsClassic:CreateConfigs()
 				order = 10,
 				type = 'description',
 				width = 'full',
-				name = 'HealComm for Blizzard\'s default unit frames.\n'
+				name = 'Heal Predictions for Blizzard\'s UI\n'
 			},
 			button0 = {
 				order = 20,
 				type = 'execute',
-				name = 'Reset to defaults',
+				name = 'Reset addon to defaults',
 				confirm = true,
 				func = function() HBCdb:ResetDB() end
 			}
@@ -50,16 +50,30 @@ function HealBarsClassic:CreateConfigs()
 			spacer0 = {
 				order = 34,
 				type = 'description',
+				name = '\n', 
+			},
+			seperateOwnHeal = {
+				order = 40,
+				type = 'toggle',
+				name = 'Separate Color For Own Heals (Smart Order)',
+				desc = 'Heals are shown in the order they\'ll land. \nHoTs always shown last.',
+				width = 'full',
+				get = function() return HBCdb.global.seperateOwnColor end,
+				set = function(_, value) HBCdb.global.seperateOwnColor = value; HealBarsClassic:ResetHealBars() end,
+			},
+			spacer1 = {
+				order = 41,
+				type = 'description',
 				name = '\n',
 			},
 			hotToggle = {
 				order = 60,
 				type = 'toggle',
 				name = 'Show HoTs',
-				desc = 'Include HoTs in healing prediction',
+				desc = 'Include HoTs in healing predictions.',
 				width = 'full',
 				get = function() return HBCdb.global.showHots end,
-				set = function(_, value) HBCdb.global.showHots = value end,
+				set = function(_, value) HBCdb.global.showHots = value; HealBarsClassic:ResetHealBars() end,
 			},
 			seperateHot = {
 				order = 130,
@@ -68,22 +82,24 @@ function HealBarsClassic:CreateConfigs()
 				disabled = function() return not HBCdb.global.showHots end,
 				desc = 'Color HoTs as a seperate color.',
 				width = 'full',
-				get = function() return HBCdb.global.seperateHots end,
-				set = function(_, value) HBCdb.global.seperateHots = value end,
+				get = function() return HBCdb.global.showHots and HBCdb.global.seperateHots end,
+				set = function(_, value) HBCdb.global.seperateHots = value
+										 HealBarsClassic:ResetHealBars() end,
+			},
+			spacer2 = {
+				order = 131,
+				type = 'description',
+				name = '\n',
 			},
 			raidCheckInfo = {
 				order = 150,
 				type = 'description',
 				fontSize = 'medium',
-				name = '\n\n\n\n\n|cFFFFD100Healing Addon Raid Check|r \n'..
-						'/HealBarsClassic rc\n'..
-						'/hbc rc\n\n'
-			},
-			raidCheckDesc = {
-				order = 160,
-				type = 'description',
-				name = 'Shows which players in the raid have any compatible heal prediction addon. '..
-						'Players only show if you\'ve seen them cast a heal since they\'ve joined the raid.'		
+				name = '\n\n\n\n\n|cFFFFD100Chat Commands|r \n'..
+						'/HealBarsClassic help\n'..
+						'/hbc help\n\n',
+				descStyle = 'inline',
+				desc = 'test'
 			}
 		},
 	}	
@@ -141,31 +157,83 @@ function HealBarsClassic:CreateConfigs()
 					}
 				}
 			},
+			textureGroup = {
+				name = 'Textures',
+				type = 'group',
+				order = 15,
+				args = {
+					unitFrameTextures = {
+						order = 140,
+						type = 'toggle',
+						name = 'Alternative Heal Texture (Unit Frames Only)',
+						desc = 'Requires /reload. Improves contrast.',
+						descStyle = 'inline',
+						width = 'full',
+						get = function() return HBCdb.global.alternativeTexture end,
+						set = function(_,value) HBCdb.global.alternativeTexture = value end
+					},
+				}
+			},
 			statusTextGroup = {
 				name = 'Raid Status Text',
 				type = 'group',
 				order = 20,
 				args = {
-					feignToggle = {
-						order = 20,
+					defensiveToggle = {
+						order = 10,
 						type = 'toggle',
-						name = 'Invulnerability Spell Indicator',
-						descStyle = 'inline',
-						desc = 'Displays text when certain invulnerability spells are used. \nCurrently supported spells:\n\n'..
-								'Divine Shield - DIVSHLD\n' ..
-								'Divine Protection - DIVPROT\n' ..
-								'Divine Intervention - DIVINTR\n' ..
-								'Blessing of Protection - BLSPROT\n' ..
-								'Ice Block - ICEBLCK',
-						width = 'full',
+						name = 'Enabled',
+						desc = 'Enable custom status text display.',
 						get = function() return HBCdb.global.defensiveIndicator end,
 						set = function(_, value) HBCdb.global.defensiveIndicator = value end,
 					},
-					spacer = {
-						order = 30,
-						type = 'description',
-						name = '\n',
+					invulDefensiveToggles = {
+						order = 20,
+						type = 'multiselect',
+						name = 'Invulnerability Indicators',
+						width = 'full',
+						disabled = function() return not HBCdb.global.defensiveIndicator end,
+						values = HealBarsClassic.invulStatusTextConfigList,
+						get = function(_,key) return HBCdb.global.enabledStatusTexts[key] end,
+						set = function(_,key,state) HBCdb.global.enabledStatusTexts[key] = state end,
 					},
+					strongDefensiveToggles = {
+						order = 25,
+						type = 'multiselect',
+						name = 'Strong Mitigation Indicators',
+						width = 'full',
+						disabled = function() return not HBCdb.global.defensiveIndicator end,
+						values = HealBarsClassic.strongMitStatusTextConfigList,
+						get = function(_,key) return HBCdb.global.enabledStatusTexts[key] end,
+						set = function(_,key,state) HBCdb.global.enabledStatusTexts[key] = state end,
+					},
+					weakDefensiveToggles = {
+						order = 25,
+						type = 'multiselect',
+						name = 'Weak Mitigation Indicators',
+						width = 'full',
+						disabled = function() return not HBCdb.global.defensiveIndicator end,
+						values = HealBarsClassic.softMitStatusTextConfigList,
+						get = function(_,key) return HBCdb.global.enabledStatusTexts[key] end,
+						set = function(_,key,state) HBCdb.global.enabledStatusTexts[key] = state end,
+					},
+					miscToggles = {
+						order = 40,
+						type = 'multiselect',
+						name = 'Miscellaneous Indicators',
+						width = 'full',
+						disabled = function() return not HBCdb.global.defensiveIndicator end,
+						values = HealBarsClassic.miscStatusTextConfigList,
+						get = function(_,key) return HBCdb.global.enabledStatusTexts[key] end,
+						set = function(_,key,state) HBCdb.global.enabledStatusTexts[key] = state end,
+					}
+				},
+			},
+			healthTextGroup = {
+				name = 'Raid Health Text',
+				type = 'group',
+				order = 30,
+				args = {
 					predictiveHealthLostToggle = {
 						order = 60,
 						type = 'toggle',
@@ -176,7 +244,7 @@ function HealBarsClassic:CreateConfigs()
 						get = function() return HBCdb.global.predictiveHealthLost end,
 						set = function(_, value) HBCdb.global.predictiveHealthLost = value end,
 					}
-				},
+				}
 			},
 			miscGroup = {
 				name = 'Miscellaneous',
@@ -194,15 +262,7 @@ function HealBarsClassic:CreateConfigs()
 						set = function(_, value) HBCdb.global.fastUpdate = value;  end,
 					},
 				}
-			},
-			todoGroup = {
-				order = 60,
-				type = 'group',
-				name = 'More options coming soon!',
-				disabled = true,
-				args = {
-				}
-			},
+			}
 		}
 	}
 	options.args['colorSettings'] = {
@@ -230,7 +290,6 @@ function HealBarsClassic:CreateConfigs()
 				type = 'color',
 				name = 'Heal Color',
 				hasAlpha = true,
-				width = 'full',
 				get = function() return unpack(HBCdb.global.healColor) end,
 				set = function (_, r, g, b, a) HBCdb.global.healColor = {r,g,b,a}; 
 												HealBarsClassic.UpdateColors() end,
@@ -245,11 +304,93 @@ function HealBarsClassic:CreateConfigs()
 				type = 'color',
 				name = 'HoT Color',
 				hasAlpha = true,
-				width = 'full',
 				get = function() return unpack(HBCdb.global.hotColor) end,
 				set = function (_,r, g, b, a) HBCdb.global.hotColor = {r,g,b,a}; 
 											HealBarsClassic.UpdateColors() end,
-			}
+			},
+			spacer2 = {
+				order = 141,
+				type = 'description',
+				name = '\n',
+			},
+			ownHealColor = { 
+				order = 150,
+				type = 'color',
+				name = 'Own Heal Color',
+				hasAlpha = true,
+				get = function() return unpack(HBCdb.global.ownHealColor) end,
+				set = function (_, r, g, b, a) HBCdb.global.ownHealColor = {r,g,b,a}; 
+												HealBarsClassic.UpdateColors() end,
+			},
+			spacer3 = {
+				order = 151,
+				type = 'description',
+				name = '\n',
+			},
+			ownHotColor = { 
+				order = 160,
+				type = 'color',
+				name = 'Own HoT Color',
+				hasAlpha = true,
+				get = function() return unpack(HBCdb.global.ownHotColor) end,
+				set = function (_, r, g, b, a) HBCdb.global.ownHotColor = {r,g,b,a}; 
+												HealBarsClassic.UpdateColors() end,
+			},
+			spacer4 = {
+				order = 161,
+				type = 'description',
+				name = '\n',
+			},
+			flipColors = {
+				order = 170,
+				type = 'execute',
+				name = 'Flip Colors',
+				desc = 'Flips regular and own heal colors.',
+				func = function() 
+					HBCdb.global.healColor, HBCdb.global.ownHealColor = HBCdb.global.ownHealColor, HBCdb.global.healColor
+					HBCdb.global.hotColor, HBCdb.global.ownHotColor = HBCdb.global.ownHotColor, HBCdb.global.hotColor
+					HealBarsClassic.UpdateColors()
+				end,
+			},
+			spacer5 = {
+				order = 171,
+				type = 'description',
+				name = '\n',
+			},
+			resetColors = {
+				order = 180,
+				type = 'execute',
+				confirm = true,
+				name = 'Reset Colors',
+				desc = 'Resets colors back to the defaults.',
+				func = function() 
+					HBCdb.global.healColor = HBCDefaultColors.flat
+					HBCdb.global.hotColor = HBCDefaultColors.hot 
+					HBCdb.global.ownHealColor = HBCDefaultColors.ownFlat 
+					HBCdb.global.ownHotColor = HBCDefaultColors.ownHot
+					HealBarsClassic.UpdateColors()
+				end,
+			},
+			spacer6 = {
+				order = 181,
+				type = 'description',
+				name = '\n',
+			},
+			--[[
+			resetHighContrastColors = {
+				order = 190,
+				type = 'execute',
+				confirm = true,
+				name = 'Reset Colors (Contrast)',
+				desc = 'Resets colors back to the high contrast defaults.',
+				func = function() 
+					HBCdb.global.healColor = HBCHighContrastDefaultColors.flat
+					HBCdb.global.hotColor = HBCHighContrastDefaultColors.hot 
+					HBCdb.global.ownHealColor = HBCHighContrastDefaultColors.ownFlat 
+					HBCdb.global.ownHotColor = HBCHighContrastDefaultColors.ownHot
+					HealBarsClassic.UpdateColors()
+				end,
+			},--]]
 		}
 	}
 
