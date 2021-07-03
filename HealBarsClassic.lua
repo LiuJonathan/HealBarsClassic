@@ -52,8 +52,8 @@ HealBarsClassic.strongMitStatusTextConfigList = {
 }
 HealBarsClassic.softMitStatusTextConfigList = {
 	['BARKSKIN'] = 'Barkskin - BARKSKIN',
-	['PAINSPRS'] = 'Pain Supression - PAINSPRS',
-	['SHAMRAGE'] = 'Shamanistic Rage - SHAMRAGE'
+	['PAINSPR'] = 'Pain Supression - PAINSPR',
+	['SHMRAGE'] = 'Shamanistic Rage - SHMRAGE'
 }
 HealBarsClassic.miscStatusTextConfigList = {
 	-- ['INERVTE'] = 'Innervate - INERVTE', 
@@ -79,7 +79,7 @@ local defensiveSpells = {
 	
 	, [22812] = {name = 'BARKSKIN', duration = 12, priority = 30} -- Bark Skin
 	, [30823] = {name = 'SHMRGE', duration = 15, priority = 30} -- Shamanistic Rage
-	, [33206] = {name = 'PAINSPRS', duration = 8, priority = 25} -- Pain Suppression
+	, [33206] = {name = 'PAINSPR', duration = 8, priority = 25} -- Pain Suppression
 	
 	--, [20711] = {name = 'SPIRIT', duration = 15, priority = 1} -- Spirit of Redemption
 	--, [29166] = {name = 'INERVTE', duration = 20, priority = 40} -- Innervate 
@@ -115,17 +115,24 @@ local HBCdefault = {
 		fastUpdateDuration = 0.03, --~30 updates per second
 	}
 }
-function HealBarsClassic:ColorTest(amount)
-	local amount = amount or 500
+function HealBarsClassic:ColorTest(case)
 	if not currentHeals[playerGUID] then
 		currentHeals[playerGUID] = {}
 	end
 	local playerHeals = currentHeals[playerGUID]
 	
-	table.insert(playerHeals,{healType = 'flat',amount = amount})
-	table.insert(playerHeals,{healType = 'ownFlat',amount = amount})
-	table.insert(playerHeals,{healType = 'ownHot',amount = amount})
-	table.insert(playerHeals,{healType = 'hot',amount = amount})
+	if not case or case == 1 then
+		table.insert(playerHeals,{healType = 'ownFlat',amount = 700})
+		table.insert(playerHeals,{healType = 'flat',amount = 800})
+		table.insert(playerHeals,{healType = 'ownHot',amount = 500})
+		table.insert(playerHeals,{healType = 'hot',amount = 500})
+	elseif case == 2 then
+		table.insert(playerHeals,{healType = 'ownFlat',amount = 500})
+		table.insert(playerHeals,{healType = 'flat',amount = 500})
+	elseif case == 3 then
+		table.insert(playerHeals,{healType = 'flat',amount = 500})
+		table.insert(playerHeals,{healType = 'ownFlat',amount = 500})
+	end
 	HealBarsClassic:UpdateGUIDHeals(playerGUID)
 end
 
@@ -614,6 +621,7 @@ function HealBarsClassic:UpdateIncoming(callbackTime, ...)
 	local currentTime =GetTime()
 	
 	local hotType= bit.bor(libCHC.HOT_HEALS,libCHC.BOMB_HEALS)
+	local channelType = libCHC.CHANNEL_HEALS
 	if HBCdb.global.showHots and not HBCdb.global.seperateHots then
 		healType = bit.bor(hotType,libCHC.DIRECT_HEALS)
 	else
@@ -630,9 +638,11 @@ function HealBarsClassic:UpdateIncoming(callbackTime, ...)
 		end
 		
 		if not HBCdb.global.seperateOwnColor then
+			local flatAmount = (libCHC:GetHealAmount(targetGUID, healType, currentTime + HBCdb.global.healTimeframe) or 0) +
+						(libCHC:GetHealAmount(targetGUID, channelType, currentTime + 3) or 0)
 			--calc flat/all heals
 			table.insert(currentHeals[targetGUID],{healType = 'flat'
-									, amount = (libCHC:GetHealAmount(targetGUID, healType, currentTime + HBCdb.global.healTimeframe) or 0) * targetHealMod})
+									, amount = flatAmount * targetHealMod})
 			--calc hot heals
 			if HBCdb.global.showHots and HBCdb.global.seperateHots then
 				table.insert(currentHeals[targetGUID],{healType = 'hot'
@@ -641,20 +651,28 @@ function HealBarsClassic:UpdateIncoming(callbackTime, ...)
 		
 		else
 			local ownHealAmount,_,ownHealTime = libCHC:GetTimeframeHealAmount(targetGUID,
-							libCHC.DIRECT_HEALS,currentTime,currentTime + HBCdb.global.healTimeframe,nil,playerGUID) 
+							healType,currentTime,currentTime + HBCdb.global.healTimeframe,nil,playerGUID) 
+							+ libCHC:GetTimeframeHealAmount(targetGUID,
+								channelType,currentTime,currentTime + 3,nil,playerGUID)
 			ownHealAmount = ownHealAmount * targetHealMod
-			local beforeOtherHealAmount = 0
+			local beforeHealAmount = 0
 			if ownHealTime then
-				beforeOtherHealAmount = libCHC:GetTimeframeHealAmount(targetGUID,
-							libCHC.DIRECT_HEALS,currentTime, ownHealTime - 0.001, playerGUID) * targetHealMod
+				beforeHealAmount = libCHC:GetTimeframeHealAmount(targetGUID,
+							healType,currentTime, ownHealTime - 0.001, playerGUID) 
+							+ libCHC:GetTimeframeHealAmount(targetGUID,
+							channelType,currentTime, ownHealTime - 0.001, playerGUID) 	
+				beforeHealAmount = beforeHealAmount * targetHealMod
 			else
 				ownHealTime = 0
 			end
-			local afterOtherHealAmount = libCHC:GetTimeframeHealAmount(targetGUID,
-							libCHC.DIRECT_HEALS,ownHealTime,currentTime + HBCdb.global.healTimeframe, playerGUID) * targetHealMod
-			table.insert(currentHeals[targetGUID],{healType = 'flat', amount = beforeOtherHealAmount})
+			local afterHealAmount = libCHC:GetTimeframeHealAmount(targetGUID,
+							healType,ownHealTime,currentTime + HBCdb.global.healTimeframe, playerGUID) 
+							+ libCHC:GetTimeframeHealAmount(targetGUID,
+							channelType,ownHealTime,currentTime + 3, playerGUID) 
+			afterHealAmount = afterHealAmount * targetHealMod
+			table.insert(currentHeals[targetGUID],{healType = 'flat', amount = beforeHealAmount})
 			table.insert(currentHeals[targetGUID],{healType = 'ownFlat', amount = ownHealAmount})
-			table.insert(currentHeals[targetGUID],{healType = 'afterOwnFlat', amount = afterOtherHealAmount})
+			table.insert(currentHeals[targetGUID],{healType = 'afterOwnFlat', amount = afterHealAmount})
 			
 			if HBCdb.global.showHots then
 				if HBCdb.global.seperateHots then
