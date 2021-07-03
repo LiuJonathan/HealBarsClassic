@@ -80,7 +80,8 @@ function HealBarsClassic:CreateConfigs()
 				type = 'toggle',
 				name = 'Seperate HoT Color',
 				disabled = function() return not HBCdb.global.showHots end,
-				desc = 'Color HoTs as a seperate color.',
+				desc = 'Color HoTs as a seperate color.'..
+					'\n\nWhen \'Separate Color For Own Heals\' is enabled, this option makes both HoTs show as the same color.',
 				width = 'full',
 				get = function() return HBCdb.global.showHots and HBCdb.global.seperateHots end,
 				set = function(_, value) HBCdb.global.seperateHots = value
@@ -132,7 +133,8 @@ function HealBarsClassic:CreateConfigs()
 						order = 35,
 						type = 'range',
 						name = 'Heal Timeframe',
-						desc = 'Timeframe for casted heals.',
+						desc = 'Timeframe for casted heals. \n'
+							..'At lower settings, delayed heals won\'t show until they\'re within the timeframe.',
 						min = 0.5,
 						max = 8,
 						step = 0.5,

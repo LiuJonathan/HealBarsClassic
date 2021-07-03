@@ -4,7 +4,7 @@ local major = "LibHealComm-4.0-Custom"
 local minor = 93
 assert(LibStub, format("%s requires LibStub.", major))
 
-local HealComm = LibStub:NewLibrary(major, minor)
+HealComm = LibStub:NewLibrary(major, minor)
 if( not HealComm ) then return end
 
 local COMM_PREFIX = "LHC40"
@@ -208,6 +208,7 @@ end
 
 -- Record management, because this is getting more complicted to deal with
 local function updateRecord(pending, guid, amount, stack, endTime, ticksLeft)
+
 	if( pending[guid] ) then
 		local id = pending[guid]
 
@@ -402,7 +403,7 @@ function HealComm:GetTimeframeHealAmount(guid, bitFlag, startTime, time, ignoreG
 
 	local healFrom,healTime
 	local healAmount = 0
-	local currentTime = GetTime()
+	local currentTime = startTime or GetTime()
 
 	for _, tbl in pairs({pendingHeals, pendingHots}) do
 		for casterGUID, spells in pairs(tbl) do
@@ -424,29 +425,21 @@ function HealComm:GetTimeframeHealAmount(guid, bitFlag, startTime, time, ignoreG
 										healFrom = casterGUID
 										healAmount = healAmount + (amount * stack)
 									end
-								end
-								--[[ No time budget to fix Hot Heals
-								
 								-- Channeled heals and hots, have to figure out how many times it'll tick within the given time band
 								elseif( ( pending.bitType == CHANNEL_HEALS or pending.bitType == HOT_HEALS ) ) then
 									local ticksLeft = pending[i + 4]
-									if( not time or time >= endTime ) then
-										healAmount = healAmount + (amount * stack) * ticksLeft
-									else
-										local secondsLeft = endTime - currentTime
-										local bandSeconds = time - currentTime
-										local ticks = floor(min(bandSeconds, secondsLeft) / pending.tickInterval)
-										local nextTickIn = secondsLeft % pending.tickInterval
-										local fractionalBand = bandSeconds % pending.tickInterval
-										if( nextTickIn > 0 and nextTickIn < fractionalBand ) then
-											ticks = ticks + 1
-										end
-
-										healAmount = healAmount + (amount * stack) * min(ticks, ticksLeft)
+									local secondsLeft = endTime - currentTime
+									local bandSeconds = time - currentTime
+									local ticks = floor(min(bandSeconds, secondsLeft) / pending.tickInterval)
+									local nextTickIn = secondsLeft % pending.tickInterval
+									local fractionalBand = bandSeconds % pending.tickInterval
+									if( nextTickIn > 0 and nextTickIn < fractionalBand ) then
+										ticks = ticks + 1
 									end
+
+									healAmount = healAmount + (amount * stack) * min(ticks, ticksLeft)
 								end
 								
-								--]]
 								
 							end
 						end
@@ -483,7 +476,6 @@ function HealComm:GetNextHealAmount(guid, bitFlag, time, ignoreGUID, srcGUID)
 										healAmount = amount * stack
 										healFrom = casterGUID
 									end
-
 								-- Channeled heals and hots, have to figure out how many times it'll tick within the given time band
 								elseif( ( pending.bitType == CHANNEL_HEALS or pending.bitType == HOT_HEALS ) ) then
 									local secondsLeft = time and time - currentTime or endTime - currentTime
@@ -900,15 +892,17 @@ if( playerClass == "DRUID" ) then
 			-- Tranquility pulses on everyone within 30 yards, if they are in range of Mark of the Wild they'll get Tranquility
 			local spellName = GetSpellInfo(spellID)
 			if( spellName == Tranquility ) then
-				local targets = compressGUID[playerGUID]
-				local playerGroup = guidToGroup[playerGUID]
+			
+				guid = UnitGUID("player")
+				local targets = compressGUID[guid]
+				local group = guidToGroup[guid]
 
 				for groupGUID, id in pairs(guidToGroup) do
-					if( id == playerGroup and playerGUID ~= groupGUID and not IsSpellInRange(MarkoftheWild, guidToUnit[groupGUID]) == 1 ) then
+					local unit = guidToUnit[groupGUID]
+					if( id == group and guid ~= groupGUID and (IsSpellInRange(MarkoftheWild, unit) == 1 or CheckInteractDistance(unit, 4)) ) then
 						targets = targets .. "," .. compressGUID[groupGUID]
 					end
 				end
-
 				return targets, healAmount
 			end
 
@@ -1826,7 +1820,6 @@ end
 -- Direct heal started
 local function loadHealList(pending, amount, stack, endTime, ticksLeft, ...)
 	wipe(tempPlayerList)
-
 	-- For the sake of consistency, even a heal doesn't have multiple end times like a hot, it'll be treated as such in the DB
 	if( amount ~= -1 and amount ~= "-1" ) then
 		amount = not pending.hasVariableTicks and amount or loadHealAmount(strsplit("@", amount))
@@ -2031,7 +2024,7 @@ local function parseHealEnd(casterGUID, pending, checkField, spellID, interrupte
 	if( not pending or not pending.bitType ) then return end
 
 	wipe(tempPlayerList)
-
+	
 	if( select("#", ...) == 0 ) then
 		for i=#(pending), 1, -5 do
 			tinsert(tempPlayerList, pending[i - 4])
@@ -2040,11 +2033,10 @@ local function parseHealEnd(casterGUID, pending, checkField, spellID, interrupte
 	else
 		for i=1, select("#", ...) do
 			local guid = decompressGUID[select(i, ...)]
-
 			if guid then
 				tinsert(tempPlayerList, guid)
 				removeRecord(pending, guid)
-			end
+			end			
 		end
 	end
 
@@ -2062,6 +2054,21 @@ local function parseHealEnd(casterGUID, pending, checkField, spellID, interrupte
 	if( #(pending) == 0 ) then wipe(pending) end
 
 	HealComm.callbacks:Fire("HealComm_HealStopped", casterGUID, spellID, bitType, interrupted, unpack(tempPlayerList))
+	
+	--Tranq only results in a HealEnd for the casting Druid, so special logic must clear its heal on nearby players
+	if spellName == 'Tranquility' then 
+		wipe(tempPlayerList)
+		for i=#(pending), 1, -5 do tinsert(tempPlayerList, pending[i - 4]) end
+
+		if( #(tempPlayerList) > 0 ) then
+			local spellID, bitType = pending.spellID, pending.bitType
+			wipe(pending)
+
+			HealComm.callbacks:Fire("HealComm_HealStopped", casterGUID, spellID, bitType, true, unpack(tempPlayerList))
+		end
+	end
+	
+	
 end
 
 HealComm.parseHealEnd = parseHealEnd
@@ -2211,12 +2218,12 @@ local eventRegistered = {
 
 function HealComm:COMBAT_LOG_EVENT_UNFILTERED(...)
 	local timestamp, eventType, hideCaster, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags = ...
+	local _, spellName = select(12, ...)
 	if( not eventRegistered[eventType] ) then return end
 
-	local _, spellName = select(12, ...)
 	local destUnit = guidToUnit[destGUID]
 	local spellID = destUnit and select(10, unitHasAura(destUnit, spellName)) or select(7, GetSpellInfo(spellName))
-
+	
 	-- Heal or hot ticked that the library is tracking
 	-- It's more efficient/accurate to have the library keep track of this locally, spamming the comm channel would not be a very good thing especially when a single player can have 4 - 8 hots/channels going on them.
 	if( eventType == "SPELL_HEAL" or eventType == "SPELL_PERIODIC_HEAL" ) then
@@ -2271,7 +2278,7 @@ function HealComm:COMBAT_LOG_EVENT_UNFILTERED(...)
 		elseif spellData[spellName] and spellData[spellName]._isChanneled then
 			local bitType, amount, totalTicks, tickInterval = CalculateHealing(destGUID, spellID, destUnit)
 			if bitType == CHANNEL_HEALS then
-				local targets, amt = compressGUID[destGUID], max(amount, 0)
+				local targets, amt = GetHealTargets(type, destGUID, max(amount, 0), spellID)
 				if targets then
 					local endTime = select(5, ChannelInfo())
 					if endTime then
@@ -2382,13 +2389,14 @@ function HealComm:UNIT_SPELLCAST_SENT(unit, targetName, castGUID, spellID)
 	end
 end
 
+local spellCastSucceeded = {}
+
 function HealComm:UNIT_SPELLCAST_START(unit, cast, spellID)
 	if( unit ~= "player") then return end
 
 	local spellName = GetSpellInfo(spellID)
-
+	spellCastSucceeded[spellID] = nil
 	if (not spellData[spellName] or UnitIsCharmed("player") or not UnitPlayerControlled("player") ) then return end
-
 	local castGUID = castGUIDs[spellID]
 	local castUnit = guidToUnit[castGUID]
 	if isTBC and not castUnit and spellID == 32546 and castGUID == UnitGUID("target") then
@@ -2417,7 +2425,6 @@ end
 
 HealComm.UNIT_SPELLCAST_CHANNEL_START = HealComm.UNIT_SPELLCAST_START
 
-local spellCastSucceeded = {}
 
 function HealComm:UNIT_SPELLCAST_SUCCEEDED(unit, cast, spellID)
 	if( unit ~= "player") then return end
@@ -2426,7 +2433,6 @@ function HealComm:UNIT_SPELLCAST_SUCCEEDED(unit, cast, spellID)
 	if spellID == 20216 then
 		hasDivineFavor = true
 	end
-
 	if spellData[spellName] and not spellData[spellName]._isChanneled then
 		hasDivineFavor = nil
 		parseHealEnd(playerGUID, nil, "name", spellID, false)
