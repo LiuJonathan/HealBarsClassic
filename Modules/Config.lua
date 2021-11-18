@@ -5,6 +5,8 @@
 		For convenience, order is incremented in steps of two so new options can be squeezed between them.
 ]]--
 function HealBarsClassic:CreateConfigs()
+
+	HBCdb = HealBarsClassic.HBCdb
 	local options = {
 		name = 'HealBarsClassic',
 		type = 'group',
@@ -92,6 +94,25 @@ function HealBarsClassic:CreateConfigs()
 				type = 'description',
 				name = '\n',
 			},
+			shieldGlow = {
+				order = 140,
+				type = 'toggle',
+				name = 'Shield Glow (Beta)',
+				desc = 'Adds a glow to the ends of health bars on shielded players.\n\n'
+					..'Currently supported spells:\n'
+					..'Power Word: Shield\n'
+					..'Ice Barrier\n'
+					..'Mana Shield\n'
+					..'Sacrifice (Voidwalker)\n',
+				width = 'full',
+				get = function() return HBCdb.global.shieldGlow end,
+				set = function(_,value) 
+					if not value then
+						HealBarsClassic:ClearAllShields()
+					end
+						HBCdb.global.shieldGlow = value 
+				end
+			},
 			raidCheckInfo = {
 				order = 150,
 				type = 'description',
@@ -132,11 +153,11 @@ function HealBarsClassic:CreateConfigs()
 					healTimeframe = {
 						order = 35,
 						type = 'range',
-						name = 'Heal Timeframe',
-						desc = 'Timeframe for casted heals. \n'
+						name = 'Direct Heals',
+						desc = 'Timeframe for Direct heals. \n'
 							..'At lower settings, delayed heals won\'t show until they\'re within the timeframe.',
 						min = 0.5,
-						max = 8,
+						max = 18,
 						step = 0.5,
 						get = function() return HBCdb.global.healTimeframe end,
 						set = function(info,value) HBCdb.global.healTimeframe = value end,
@@ -146,13 +167,29 @@ function HealBarsClassic:CreateConfigs()
 						type = 'description',
 						name = '\n',
 					},
+					channelTimeframe = {
+						order = 50,
+						type = 'range',
+						name = 'Channeled Heals',
+						desc = 'Timeframe for Channeled heals.',
+						min = 3,
+						max = 18,
+						step = 1,
+						get = function() return HBCdb.global.channelTimeframe end,
+						set = function(info,value) HBCdb.global.channelTimeframe = value end,
+					},
+					spacer4 = {
+						order = 51,
+						type = 'description',
+						name = '\n',
+					},
 					timeframe = {
 						order = 70,
 						type = 'range',
-						name = 'HoT Timeframe',
+						name = 'HoTs',
 						desc = 'Timeframe for HoTs.',
 						min = 3,
-						max = 8,
+						max = 18,
 						step = 1,
 						get = function() return HBCdb.global.timeframe end,
 						set = function(info,value) HBCdb.global.timeframe = value end,

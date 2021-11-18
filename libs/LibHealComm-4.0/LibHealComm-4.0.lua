@@ -405,6 +405,8 @@ function HealComm:GetTimeframeHealAmount(guid, bitFlag, startTime, time, ignoreG
 	local healAmount = 0
 	local currentTime = startTime or GetTime()
 
+	if startTime and time and (startTime > time) then return end
+
 	for _, tbl in pairs({pendingHeals, pendingHots}) do
 		for casterGUID, spells in pairs(tbl) do
 			if( not ignoreGUID or ignoreGUID ~= casterGUID ) and (not srcGUID or srcGUID == casterGUID) then
@@ -899,7 +901,8 @@ if( playerClass == "DRUID" ) then
 
 				for groupGUID, id in pairs(guidToGroup) do
 					local unit = guidToUnit[groupGUID]
-					if( id == group and guid ~= groupGUID and (IsSpellInRange(MarkoftheWild, unit) == 1 or CheckInteractDistance(unit, 4)) ) then
+					if( id == group and guid ~= groupGUID and not UnitIsDead(unit) 
+							and (IsSpellInRange(MarkoftheWild, unit) == 1 or CheckInteractDistance(unit, 4)) ) then
 						targets = targets .. "," .. compressGUID[groupGUID]
 					end
 				end
@@ -986,7 +989,6 @@ if( playerClass == "DRUID" ) then
 				healAmount = healAmount / hotData[spellName].ticks
 				-- Figure out total ticks
 				totalTicks = 7
-				
 			end
 
 			healAmount = calculateGeneralAmount(hotData[spellName].levels[spellRank], healAmount, spellPower, spModifier, healModifier)
@@ -2765,13 +2767,15 @@ function HealComm:OnInitialize()
 
 	do
 		local FirstAid = GetSpellInfo(746)
-
+		local GiftOfTheNaaru = GetSpellInfo(28880)
+		
 		spellData[FirstAid] = {
 			ticks = {6, 6, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8},
 			interval = 1,
 			averages = {66, 114, 161, 301, 400, 640, 800, 1104, 1360, 2000, 2800, 3400}
 		}
-
+		hotData[GiftOfTheNaaru] = {interval = 3, ticks = 5}
+		
 		local _GetHealTargets = GetHealTargets
 
 		GetHealTargets = function(bitType, guid, healAmount, spellID, data)
@@ -2787,6 +2791,7 @@ function HealComm:OnInitialize()
 		end
 
 		local _CalculateHealing = CalculateHealing
+		local _CalculateHotHealing = CalculateHotHealing
 
 		CalculateHealing = function(guid, spellID, unit)
 			local spellName, spellRank = GetSpellInfo(spellID), SpellIDToRank[spellID]
@@ -2802,6 +2807,23 @@ function HealComm:OnInitialize()
 
 			if _CalculateHealing then
 				return _CalculateHealing(guid, spellID, unit)
+			end
+		end
+		
+		CalculateHotHealing = function(guid,spellID,unit)
+			local spellName, spellRank = GetSpellInfo(spellID), SpellIDToRank[spellID]
+			
+			if spellName == GiftOfTheNaaru then
+				local healAmount = 35 + (playerLevel * 15) + GetSpellBonusHealing()
+				if not healAmount then return end
+			
+				local ticks = hotData[spellName].ticks
+			
+				return HOT_HEALS, ceil(healAmount / ticks), ticks, hotData[spellName].interval
+			end
+			
+			if _CalculateHotHealing then
+				return _CalculateHotHealing(guid, spellID, unit)
 			end
 		end
 	end

@@ -5,12 +5,14 @@ local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local AceConsole = LibStub("AceConsole-3.0")
 
 local healBarTable = {} 
+local shieldBarTable = {}
 local masterFrameTable = {}
 local statusGUIDs = {}
+local shieldGUIDs = {}
 local barTypes = {['flat']={}, ['hot']={}, ['ownFlat']={}, ['ownHot']={}, ['afterOwnFlat']={}}
 local currentHeals = {}
 local playerGUID = UnitGUID('player')
-HBCdb = {}
+local HBCdb = {}
 
 
 local partyGUIDs = {
@@ -33,7 +35,7 @@ local globalFrameList = {
 				}
 
 HBCDefaultColors = {
-	['flat'] = {0, 1, 0, 1.0},
+	['flat'] = {130/255, 1, 0, 1.0},
 	['hot'] = {110/255, 230/255, 55/255, 0.7},
 	['ownFlat']	= {255/255, 0/255, 135/255, 1},
 	['ownHot'] = {230/255, 76/255, 105/255, 0.7},
@@ -84,11 +86,50 @@ local defensiveSpells = {
 	--, [20711] = {name = 'SPIRIT', duration = 15, priority = 1} -- Spirit of Redemption
 	--, [29166] = {name = 'INERVTE', duration = 20, priority = 40} -- Innervate 
 	} 
+local shieldSpells = {
+	[17] = {} -- Power Word: Shield Rank 1
+	, [592] = {} -- Power Word: Shield Rank 2
+	, [600] = {} -- Power Word: Shield Rank 3
+	, [3747] = {} -- Power Word: Shield Rank 4
+	, [6065] = {} -- Power Word: Shield Rank 5
+	, [6066] = {} -- Power Word: Shield Rank 6
+	, [10898] = {} -- Power Word: Shield Rank 7
+	, [10899] = {} -- Power Word: Shield Rank 8
+	, [10900] = {} -- Power Word: Shield Rank 9
+	, [10901] = {} -- Power Word: Shield Rank 10
+	, [25217] = {} -- Power Word: Shield Rank 11
+	, [25218] = {} -- Power Word: Shield Rank 12
+	, [1463] = {} -- Mana Shield Rank 1
+	, [8494] = {} -- Mana Shield Rank 2
+	, [8495] = {} -- Mana Shield Rank 3
+	, [10191] = {} -- Mana Shield Rank 4
+	, [10192] = {} -- Mana Shield Rank 5
+	, [10193] = {} -- Mana Shield Rank 6
+	, [27131] = {} -- Mana Shield Rank 6
+	, [11426] = {} -- Ice Barrier Rank 1
+	, [13031] = {} -- Ice Barrier Rank 2
+	, [13032] = {} -- Ice Barrier Rank 3
+	, [13033] = {} -- Ice Barrier Rank 4
+	, [27134] = {} -- Ice Barrier Rank 5
+	, [33405] = {} -- Ice Barrier Rank 6
+	, [7812] = {} -- Sacrifice Rank 1
+	, [19438] = {} -- Sacrifice Rank 2
+	, [19440] = {} -- Sacrifice Rank 3
+	, [19441] = {} -- Sacrifice Rank 4
+	, [19442] = {} -- Sacrifice Rank 5
+	, [19443] = {} -- Sacrifice Rank 6
+	, [27273] = {} -- Sacrifice Rank 7
+	--, [22812] = {} -- Barkskin (debug only)
+	
+
+
+}
 local HBCdefault = {
 	global = {
 		overhealPercent = 20,
 		timeframe = 3,
 		healTimeframe = 8,
+		channelTimeframe = 3,
 		showHots = true,
 		seperateHots = true,
 		seperateOwnHeals = false,
@@ -97,6 +138,7 @@ local HBCdefault = {
 		ownHealColor = HBCDefaultColors.ownFlat,
 		ownHotColor = HBCDefaultColors.ownHot,
 		defensiveIndicator = true,
+		shieldGlow = false,
 		enabledStatusTexts = {
 			['*'] = false,
 			['DIVSHLD'] = true,
@@ -115,6 +157,20 @@ local HBCdefault = {
 		fastUpdateDuration = 0.03, --~30 updates per second
 	}
 }
+
+function HealBarsClassic:ClearAllShields()
+	local guidsToWipe = {}
+	for guid, value in pairs(shieldGUIDs) do
+		if value then
+			table.insert(guidsToWipe,guid)
+		end
+	end
+	wipe(shieldGUIDs)
+	for _, guid in ipairs(guidsToWipe) do
+		HealBarsClassic:UpdateGUIDHeals(guid)
+	end
+end
+
 function HealBarsClassic:ColorTest(case)
 	if not currentHeals[playerGUID] then
 		currentHeals[playerGUID] = {}
@@ -172,31 +228,46 @@ function HealBarsClassic:createHealBars(unitFrame, textureType)
 	end
 	local currentBarList = healBarTable[unitFrame]
 
-
-	
-	
 	for healType, properties in pairs(barTypes) do
 		if not currentBarList[healType] then
-			currentBarList[healType] = CreateFrame("StatusBar"
+			local healFrame = CreateFrame("StatusBar"
 				, "HBCIncHealBar"..unitFrame:GetName()..healType, unitFrame)
-			currentBarList[healType]:SetFrameStrata("LOW")
+			healFrame:SetFrameStrata("LOW")
 			if(unitFrame:GetName() == 'FocusFrame') then
-				currentBarList[healType]:SetFrameLevel(currentBarList[healType]:GetFrameLevel())
+				healFrame:SetFrameLevel(healFrame:GetFrameLevel())
 			end
-			currentBarList[healType]:SetFrameLevel(currentBarList[healType]:GetFrameLevel()-1)
+			healFrame:SetFrameLevel(healFrame:GetFrameLevel()-1)
 			if textureType == 'raid' or HBCdb.global.alternativeTexture then
-				currentBarList[healType]:SetStatusBarTexture("Interface\\RaidFrame\\Raid-Bar-Hp-Fill")
+				healFrame:SetStatusBarTexture("Interface\\RaidFrame\\Raid-Bar-Hp-Fill")
 			else 
-				currentBarList[healType]:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+				healFrame:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
 			end
-			currentBarList[healType]:SetMinMaxValues(0, 1)
-			currentBarList[healType]:SetValue(1)
-			currentBarList[healType]:SetStatusBarColor(HealBarsClassic:getHealColor(healType))
+			healFrame:SetMinMaxValues(0, 1)
+			healFrame:SetValue(1)
+			healFrame:SetStatusBarColor(HealBarsClassic:getHealColor(healType))
+			healFrame:Hide()
+			currentBarList[healType] = healFrame
 		end
 	end
 	
+	
+	local _, healthBar = HealBarsClassic:GetFrameInfo(unitFrame)
+	local shieldFrame = healthBar:CreateTexture("HBCShieldBar"..unitFrame:GetName(),'ARTWORK',healthBar,2)
+	shieldFrame:SetTexture("Interface\\RaidFrame\\Shield-Overshield")
+	shieldFrame:SetBlendMode("ADD")
+	shieldFrame:SetWidth(16)
+	shieldFrame:Hide()
+			
+	shieldBarTable[unitFrame] = shieldFrame
+	
 	local eventFrame = CreateFrame("Frame","HealBarsClassicEventFrame"..unitFrame:GetName(), unitFrame)
 	eventFrame:SetScript("OnEvent",function(self) HealBarsClassic:UpdateHealBars(self:GetParent()) end)
+	
+	local shieldEventFrame = CreateFrame("Frame","HealBarsClassicAuraEventFrame"..unitFrame:GetName(), unitFrame)
+	shieldEventFrame:SetScript("OnEvent",function(self) HealBarsClassic:UpdateAuras(self:GetParent()) end)
+	shieldEventFrame:RegisterUnitEvent('UNIT_AURA',(HealBarsClassic:GetFrameInfo(unitFrame)))
+	shieldEventFrame:RegisterUnitEvent('UNIT_HEALTH',(HealBarsClassic:GetFrameInfo(unitFrame)))
+	shieldEventFrame:RegisterUnitEvent('UNIT_MAXHEALTH',(HealBarsClassic:GetFrameInfo(unitFrame)))
 
 end
 
@@ -216,9 +287,8 @@ function HealBarsClassic:UpdateGUIDHeals(GUID)
 			if unitFrame.statusText then
 				CompactUnitFrame_UpdateStatusText(unitFrame)
 			end
-		
+			HealBarsClassic:UpdateShieldGlow(unitFrame)
 		end
-	
 	end 
 
 end
@@ -297,6 +367,22 @@ function HealBarsClassic:UpdateHealBars(unitFrame)
 	end
 end
 
+function HealBarsClassic:UpdateShieldGlow(unitFrame)
+	local displayedUnit,healthBar = HealBarsClassic:GetFrameInfo(unitFrame)
+		local shieldFrame = _G['HBCShieldBar'..unitFrame:GetName()]
+	
+	if HBCdb.global.shieldGlow and displayedUnit and shieldGUIDs[UnitGUID(displayedUnit)] then
+		local maxHealth= UnitHealthMax(displayedUnit)
+		local health= UnitHealth(displayedUnit)
+		local healthWidth=healthBar:GetWidth() * (health / maxHealth)
+		shieldFrame:SetPoint('TOPLEFT',healthBar,'TOPLEFT',healthWidth - 7,0)
+		shieldFrame:SetHeight(healthBar:GetHeight())
+		shieldFrame:Show()
+	else
+		shieldFrame:Hide()
+	end
+end
+
 local function UnitFrame_SetUnitHook(unitFrame)
 	HealBarsClassic:UnRegisterAllInactiveFrames()
 	HealBarsClassic:UpdateHealBars(unitFrame)
@@ -309,45 +395,51 @@ local function CompactUnitFrame_SetUnitHook(unitFrame)
 end
 hooksecurefunc("CompactUnitFrame_SetUnit", CompactUnitFrame_SetUnitHook) -- This needs early hooking
 
-function HealBarsClassic:CheckAndApplySpellStatus(eventType,spell, targetGUID)
-	if not spell or not HBCdb.global.enabledStatusTexts[spell.name] then return end
+function HealBarsClassic:UpdateAuras(unitFrame)
+	local index = 1
+	local statusUpdate = false
+	local unitId = HealBarsClassic:GetFrameInfo(unitFrame)
+
+	if not unitId then return end
+
+	local targetGUID = UnitGUID(unitId)
+	if not targetGUID then return end
+	
+	--wipe current data
 	if not statusGUIDs[targetGUID] then
 		statusGUIDs[targetGUID] = {}
 	end
-	if eventType == 'SPELL_AURA_APPLIED' then 
-		statusGUIDs[targetGUID][spell] = true
-		C_Timer.After(spell.duration,function() 
-				if statusGUIDs[targetGUID][spell] then
-					statusGUIDs[targetGUID][spell] = nil
-				end end) --fallback in case target moves out of combat log range
-	else --aura removed
-		statusGUIDs[targetGUID][spell] = nil
-	end
-end
-function HealBarsClassic:COMBAT_LOG_EVENT_UNFILTERED(...)
-	
-	if not HBCdb.global.defensiveIndicator
-		or (not UnitInParty("player") and not UnitInRaid("player")) then return end
-	
-	local timestamp, eventType, hideCaster, sourceGUID, sourceName
-		, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags, spellId = CombatLogGetCurrentEventInfo()
-	if bit.band(sourceFlags,0x00000C00) ~= 0x00000400 then return end --check if caster is a player
-	if not eventType == 'SPELL_AURA_APPLIED' 
-		and not eventType == 'SPELL_AURA_REMOVED'
-		and not eventType == 'SPELL_AURA_BROKEN'
-		and not eventType == 'SPELL_AURA_BROKEN_SPELL' 
-		and not eventType == 'UNIT_DIED'
-		and not eventType == 'UNIT_DESTROYED'
-		and not eventType == 'UNIT_DISSIPATES' then return end
-	local targetGUID = destGUID or SourceGUID
+	wipe(statusGUIDs[targetGUID])
 
-	local spell = defensiveSpells[spellId]
-	if spell then
-		HealBarsClassic:CheckAndApplySpellStatus(eventType,spell,targetGUID)
-	end
+	shieldGUIDs[targetGUID] = false
+	repeat
+		local name, icon, count, debuffType, duration, expirationTime, source, isStealable, nameplateShowPersonal, spellId 
+			= UnitBuff(unitId,index)
+		if spellId then
+			-- check defensive auras
+			if HBCdb.global.defensiveIndicator then
+				local spell = defensiveSpells[spellId]
+				if spell and HBCdb.global.enabledStatusTexts[spell.name] then
+					statusGUIDs[targetGUID][spell] = true
+					statusUpdate = true
+				end
+			end
+			
+			-- check shield auras
+			if HBCdb.global.shieldGlow then
+				local spell = shieldSpells[spellId]
+				if spell then
+					shieldGUIDs[targetGUID] = true
+					statusUpdate = true
+				end
+			end
 
-	HealBarsClassic:UpdateGUIDHeals(targetGUID)	
-		
+			index = index + 1
+		end
+	until(not spellId)
+
+	HealBarsClassic:UpdateGUIDHeals(targetGUID)
+
 end
 
 function HealBarsClassic:GROUP_ROSTER_UPDATE()
@@ -414,6 +506,7 @@ end
 function HealBarsClassic:OnInitialize()
 	HBCdb = LibStub("AceDB-3.0"):New("HealBarSettings", HBCdefault)
 	HBCdb.RegisterCallback(HealBarsClassic, "OnProfileChanged", "UpdateColors")
+	HealBarsClassic.HBCdb = HBCdb
 	HealBarsClassic:CreateDefaultHealBars()
 	HealBarsClassic:CreateConfigs()
 	hooksecurefunc("CompactUnitFrame_UpdateStatusText", CompactUnitFrame_UpdateStatusTextHBCHook)
@@ -515,6 +608,7 @@ end
 
 function HealBarsClassic:PLAYER_TARGET_CHANGED(frame)
 	HealBarsClassic:UpdateHealBars(_G['TargetFrame'])
+	HealBarsClassic:UpdateAuras(_G['TargetFrame'])
 end
 
 function HealBarsClassic:PLAYER_ROLES_ASSIGNED() 
@@ -639,7 +733,7 @@ function HealBarsClassic:UpdateIncoming(callbackTime, ...)
 		
 		if not HBCdb.global.seperateOwnColor then
 			local flatAmount = (libCHC:GetHealAmount(targetGUID, healType, currentTime + HBCdb.global.healTimeframe) or 0) +
-						(libCHC:GetHealAmount(targetGUID, channelType, currentTime + 3) or 0)
+						(libCHC:GetHealAmount(targetGUID, channelType, currentTime + HBCdb.global.channelTimeframe) or 0)
 			--calc flat/all heals
 			table.insert(currentHeals[targetGUID],{healType = 'flat'
 									, amount = flatAmount * targetHealMod})
@@ -652,23 +746,23 @@ function HealBarsClassic:UpdateIncoming(callbackTime, ...)
 		else
 			local ownHealAmount,_,ownHealTime = libCHC:GetTimeframeHealAmount(targetGUID,
 							healType,currentTime,currentTime + HBCdb.global.healTimeframe,nil,playerGUID) 
-							+ libCHC:GetTimeframeHealAmount(targetGUID,
-								channelType,currentTime,currentTime + 3,nil,playerGUID)
+			ownHealAmount = ownHealAmount + (libCHC:GetTimeframeHealAmount(targetGUID,
+								channelType,currentTime,currentTime + HBCdb.global.channelTimeframe,nil,playerGUID) or 0)
 			ownHealAmount = ownHealAmount * targetHealMod
 			local beforeHealAmount = 0
 			if ownHealTime then
-				beforeHealAmount = libCHC:GetTimeframeHealAmount(targetGUID,
-							healType,currentTime, ownHealTime - 0.001, playerGUID) 
-							+ libCHC:GetTimeframeHealAmount(targetGUID,
-							channelType,currentTime, ownHealTime - 0.001, playerGUID) 	
+				beforeHealAmount = (libCHC:GetTimeframeHealAmount(targetGUID,
+							healType,currentTime, ownHealTime - 0.001, playerGUID) or 0)
+							+ (libCHC:GetTimeframeHealAmount(targetGUID,
+							channelType,currentTime, ownHealTime - 0.001, playerGUID) or 0)
 				beforeHealAmount = beforeHealAmount * targetHealMod
 			else
 				ownHealTime = 0
 			end
-			local afterHealAmount = libCHC:GetTimeframeHealAmount(targetGUID,
-							healType,ownHealTime,currentTime + HBCdb.global.healTimeframe, playerGUID) 
-							+ libCHC:GetTimeframeHealAmount(targetGUID,
-							channelType,ownHealTime,currentTime + 3, playerGUID) 
+			local afterHealAmount = (libCHC:GetTimeframeHealAmount(targetGUID,
+							healType,ownHealTime,currentTime + HBCdb.global.healTimeframe, playerGUID) or 0)
+			afterHealAmount = afterHealAmount + (libCHC:GetTimeframeHealAmount(targetGUID,
+							channelType,ownHealTime,currentTime + HBCdb.global.channelTimeframe, playerGUID) or 0)
 			afterHealAmount = afterHealAmount * targetHealMod
 			table.insert(currentHeals[targetGUID],{healType = 'flat', amount = beforeHealAmount})
 			table.insert(currentHeals[targetGUID],{healType = 'ownFlat', amount = ownHealAmount})
@@ -709,7 +803,6 @@ end
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
 eventFrame:RegisterEvent("PLAYER_ROLES_ASSIGNED")
-eventFrame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 eventFrame:SetScript("OnEvent", function(self, event, ...)
 			HealBarsClassic[event](self, ...) end)
 
