@@ -2774,7 +2774,9 @@ function HealComm:OnInitialize()
 			interval = 1,
 			averages = {66, 114, 161, 301, 400, 640, 800, 1104, 1360, 2000, 2800, 3400}
 		}
-		hotData[GiftOfTheNaaru] = {interval = 3, ticks = 5}
+		if isTBC then
+			hotData[GiftOfTheNaaru] = {interval = 3, ticks = 5}
+		end
 		
 		local _GetHealTargets = GetHealTargets
 
@@ -2813,7 +2815,7 @@ function HealComm:OnInitialize()
 		CalculateHotHealing = function(guid,spellID,unit)
 			local spellName, spellRank = GetSpellInfo(spellID), SpellIDToRank[spellID]
 			
-			if spellName == GiftOfTheNaaru then
+			if isTBC and spellName == GiftOfTheNaaru then
 				local healAmount = 35 + (playerLevel * 15) + GetSpellBonusHealing()
 				if not healAmount then return end
 			
