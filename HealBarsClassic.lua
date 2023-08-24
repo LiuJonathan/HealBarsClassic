@@ -252,7 +252,7 @@ function HealBarsClassic:createHealBars(unitFrame, textureType)
 	
 	
 	local _, healthBar = HealBarsClassic:GetFrameInfo(unitFrame)
-	local shieldFrame = healthBar:CreateTexture("HBCShieldBar"..unitFrame:GetName(),'ARTWORK',healthBar,2)
+	local shieldFrame = healthBar:CreateTexture("HBCShieldBar"..unitFrame:GetName(),'ARTWORK', nil, 2)
 	shieldFrame:SetTexture("Interface\\RaidFrame\\Shield-Overshield")
 	shieldFrame:SetBlendMode("ADD")
 	shieldFrame:SetWidth(16)
